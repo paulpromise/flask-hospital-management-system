@@ -41,30 +41,32 @@
         <div class="form-grid">
             <div class="form-group full-width">
                 <label for="patient_id">Patient *</label>
-                <select id="patient_id" name="patient_id" required>
-                    <option value="">Select patient</option>
-                    {% for patient in patients %}
-                    <option value="{{ patient.id }}"
-                        {% if request.form.get('patient_id', '')|string == patient.id|string %}selected{% endif %}>
-                        {{ patient.first_name }} {{ patient.last_name }}
-                        (Patient #{{ patient.id }})
-                    </option>
-                    {% endfor %}
-                </select>
+                <div class="searchable-select" data-searchable-select>
+                    <input type="search" id="patient-search" placeholder="Select or search patient by name..." autocomplete="off" required>
+                    <input type="hidden" id="patient_id" name="patient_id" value="{{ request.form.get('patient_id', '') }}">
+                    <div class="searchable-options" id="patient-options">
+                        {% for patient in patients %}
+                        <button type="button" class="searchable-option" data-value="{{ patient.id }}" data-search="{{ patient.first_name }} {{ patient.last_name }} {{ patient.patient_code }} {{ patient.id }}">
+                            {{ patient.first_name }} {{ patient.last_name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
 
             <div class="form-group full-width">
                 <label for="doctor_id">Doctor *</label>
-                <select id="doctor_id" name="doctor_id" required>
-                    <option value="">Select doctor</option>
-                    {% for doctor in doctors %}
-                    <option value="{{ doctor.id }}"
-                        {% if request.form.get('doctor_id', '')|string == doctor.id|string %}selected{% endif %}>
-                        Dr. {{ doctor.first_name }} {{ doctor.last_name }}
-                        — {{ doctor.specialization }} ({{ doctor.department.name }})
-                    </option>
-                    {% endfor %}
-                </select>
+                <div class="searchable-select" data-searchable-select>
+                    <input type="search" id="doctor-search" placeholder="Select or search doctor by name..." autocomplete="off" required>
+                    <input type="hidden" id="doctor_id" name="doctor_id" value="{{ request.form.get('doctor_id', '') }}">
+                    <div class="searchable-options" id="doctor-options">
+                        {% for doctor in doctors %}
+                        <button type="button" class="searchable-option" data-value="{{ doctor.id }}" data-search="{{ doctor.first_name }} {{ doctor.last_name }} {{ doctor.doctor_code }} {{ doctor.id }}">
+                            Dr. {{ doctor.first_name }} {{ doctor.last_name }}
+                        </button>
+                        {% endfor %}
+                    </div>
+                </div>
             </div>
 
             <div class="form-group full-width">
@@ -95,5 +97,54 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function setupSearch(inputId, hiddenId, optionsId) {
+        const input = document.getElementById(inputId);
+        const hidden = document.getElementById(hiddenId);
+        const options = Array.from(document.getElementById(optionsId).querySelectorAll(".searchable-option"));
+        const container = input.closest(".searchable-select");
+
+        function filterOptions(showOptions) {
+            const query = input.value.trim().toLowerCase();
+            options.forEach(function (option) {
+                option.hidden = !showOptions || !option.dataset.search.toLowerCase().includes(query);
+            });
+            container.classList.toggle("is-open", showOptions && options.some(function (option) { return !option.hidden; }));
+        }
+
+        const selected = options.find(function (option) { return option.dataset.value === hidden.value; });
+        if (selected) input.value = selected.textContent.trim();
+
+        input.addEventListener("focus", function () { filterOptions(true); });
+        input.addEventListener("input", function () {
+            hidden.value = "";
+            filterOptions(true);
+        });
+        options.forEach(function (option) {
+            option.addEventListener("click", function () {
+                hidden.value = option.dataset.value;
+                input.value = option.textContent.trim();
+                input.setCustomValidity("");
+                filterOptions(false);
+            });
+        });
+
+        input.addEventListener("invalid", function () {
+            input.setCustomValidity(hidden.value ? "" : "Select a name from the list.");
+        });
+    }
+
+    setupSearch("patient-search", "patient_id", "patient-options");
+    setupSearch("doctor-search", "doctor_id", "doctor-options");
+
+    document.addEventListener("click", function (event) {
+        document.querySelectorAll(".searchable-select").forEach(function (container) {
+            if (!container.contains(event.target)) container.classList.remove("is-open");
+        });
+    });
+});
+</script>
 
 {% endblock %}

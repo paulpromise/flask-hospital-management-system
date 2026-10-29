@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block content %}
@@ -13,12 +12,46 @@
     </a>
 </div>
 
+<div class="search-container">
+    <form method="GET" action="{{ url_for('billing') }}" class="search-form">
+        <input
+            type="search"
+            name="q"
+            placeholder="Search by patient name or patient ID..."
+            value="{{ search }}"
+            aria-label="Search bills by patient name or ID"
+        >
+
+        <button type="submit" class="button button-primary">Search</button>
+
+        {% if search %}
+            <a href="{{ url_for('billing') }}" class="button">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+<section class="billing-summary-bar" aria-label="Billing totals">
+    <div class="billing-summary-item">
+        <span class="billing-summary-label">Total billed</span>
+        <strong>{{ "%.2f"|format(total_billed) }}</strong>
+    </div>
+    <div class="billing-summary-item billing-summary-paid">
+        <span class="billing-summary-label">Paid</span>
+        <strong>{{ "%.2f"|format(total_paid) }}</strong>
+    </div>
+    <div class="billing-summary-item billing-summary-pending">
+        <span class="billing-summary-label">Pending</span>
+        <strong>{{ "%.2f"|format(total_pending) }}</strong>
+    </div>
+</section>
+
 <div class="table-wrapper">
     <table class="data-table">
         <thead>
             <tr>
                 <th>Invoice Number</th>
                 <th>Patient</th>
+                <th>Patient ID</th>
                 <th>Appointment</th>
                 <th>Total Amount</th>
                 <th>Amount Paid</th>
@@ -30,52 +63,63 @@
 
         <tbody>
             {% for bill in bills %}
-            {% set amount_paid = bill.payments|sum(attribute='amount') %}
-            {% set balance = bill.total_amount - amount_paid %}
+                {% set amount_paid = bill.payments|sum(attribute='amount') %}
+                {% set balance = bill.total_amount - amount_paid %}
 
-            <tr>
-                <td>{{ bill.invoice_number }}</td>
+                <tr>
+                   <td>
+                        <a href="{{ url_for('bill_detail', bill_id=bill.id) }}"
+                        class="invoice-link">
+                            {{ bill.invoice_number }}
+                        </a>
+                    </td>
 
-                <td>
-                    {{ bill.patient.first_name }}
-                    {{ bill.patient.last_name }}
-                </td>
+                    <td>
+                        {{ bill.patient.first_name }}
+                        {{ bill.patient.last_name }}
+                    </td>
 
-                <td>
-                    {% if bill.appointment %}
-                        #{{ bill.appointment.id }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
+                    <td>{{ bill.patient.patient_code }}</td>
 
-                <td>{{ "%.2f"|format(bill.total_amount) }}</td>
-                <td>{{ "%.2f"|format(amount_paid) }}</td>
-                <td>{{ "%.2f"|format(balance) }}</td>
+                    <td>
+                        {% if bill.appointment %}
+                            #{{ bill.appointment.id }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
 
-                <td>
-                    {% if bill.due_date %}
-                        {{ bill.due_date.strftime('%d %b %Y') }}
-                    {% else %}
-                        -
-                    {% endif %}
-                </td>
+                    <td>{{ "%.2f"|format(bill.total_amount) }}</td>
+                    <td>{{ "%.2f"|format(amount_paid) }}</td>
+                    <td>{{ "%.2f"|format(balance) }}</td>
 
-                <td>
-                    <span class="status-label status-{{ bill.status }}">
-                        {{ bill.status.replace('_', ' ')|title }}
-                    </span>
-                </td>
-            </tr>
+                    <td>
+                        {% if bill.due_date %}
+                            {{ bill.due_date.strftime('%d %b %Y') }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
 
+                    <td>
+                        <span class="status-label status-{{ bill.status }}">
+                            {{ bill.status.replace('_', ' ')|title }}
+                        </span>
+                    </td>
+                </tr>
             {% else %}
-            <tr>
-                <td colspan="8" class="empty-state">
-                    No bills have been created yet.
-                </td>
-            </tr>
+                <tr>
+                    <td colspan="9" class="empty-state">
+                        {% if search %}
+                            No bills found for "{{ search }}".
+                        {% else %}
+                            No bills have been created yet.
+                        {% endif %}
+                    </td>
+                </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% include "_pagination.html" %}
 {% endblock %}

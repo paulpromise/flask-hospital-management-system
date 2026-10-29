@@ -25,19 +25,19 @@
     <div class="panel-heading">
         <div>
             <h3>Registered Patients</h3>
-            <p>{{ patients|length }} patient record(s)</p>
+            <p>{{ pagination.total }} patient record(s)</p>
         </div>
     </div>
 
     <form method="GET" action="{{ url_for('patients') }}" class="search-form">
         <input
-            type="text"
-            name="search"
+            type="search"
+            name="q"
             placeholder="Search by patient ID, name, or phone"
-            value="{{ request.args.get('search', '') }}"
+            value="{{ search }}"
         >
         <button type="submit" class="button button-primary">Search</button>
-        {% if request.args.get('search') %}
+        {% if search %}
             <a href="{{ url_for('patients') }}" class="button">Clear</a>
         {% endif %}
     </form>
@@ -83,5 +83,7 @@
     </div>
     {% endif %}
 </div>
+
+{% include "_pagination.html" %}
 
 {% endblock %}

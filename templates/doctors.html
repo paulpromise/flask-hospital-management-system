@@ -47,7 +47,7 @@
     {% if search %}
         <p class="search-results">
             Search results for: <strong>{{ search }}</strong>
-            — {{ doctors|length }} doctor(s) found.
+            — {{ pagination.total }} doctor(s) found.
         </p>
     {% endif %}
 
@@ -114,4 +114,5 @@
         </table>
     </div>
 </div>
+{% include "_pagination.html" %}
 {% endblock %}

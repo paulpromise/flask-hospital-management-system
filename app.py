@@ -282,6 +282,7 @@ class Medication(db.Model):
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(150), nullable=False)
+    inventory_code = db.Column(db.String(30), unique=True, nullable=False)
     strength = db.Column(db.String(50))
     dosage_form = db.Column(db.String(50))
 
@@ -645,8 +646,16 @@ def patients():
             Patient.last_name.ilike(f"%{search}%"),
             Patient.phone.ilike(f"%{search}%"),
         ))
-    all_patients = query.order_by(Patient.id.desc()).all()
-    return render_template("patients.html", patients=all_patients, search=search)
+    page = request.args.get("page", 1, type=int)
+    pagination = query.order_by(Patient.id.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    return render_template(
+        "patients.html",
+        patients=pagination.items,
+        pagination=pagination,
+        search=search,
+    )
 
 
 @app.route("/patients/add", methods=["GET", "POST"])
@@ -699,13 +708,15 @@ def add_patient():
 
 @app.route("/departments")
 def departments():
-    all_departments = Department.query.order_by(
-        Department.name.asc()
-    ).all()
+    page = request.args.get("page", 1, type=int)
+    pagination = Department.query.order_by(Department.name.asc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
 
     return render_template(
         "departments.html",
-        departments=all_departments,
+        departments=pagination.items,
+        pagination=pagination,
     )
 
 
@@ -765,11 +776,15 @@ def doctors():
             )
         )
 
-    all_doctors = query.order_by(Doctor.id.desc()).all()
+    page = request.args.get("page", 1, type=int)
+    pagination = query.order_by(Doctor.id.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
 
     return render_template(
         "doctors.html",
-        doctors=all_doctors,
+        doctors=pagination.items,
+        pagination=pagination,
         search=search,
     )
 
@@ -858,13 +873,15 @@ def add_doctor():
 
 @app.route("/medical-records")
 def medical_records():
-    records = MedicalRecord.query.order_by(
+    page = request.args.get("page", 1, type=int)
+    pagination = MedicalRecord.query.order_by(
         MedicalRecord.consultation_at.desc()
-    ).all()
+    ).paginate(page=page, per_page=20, error_out=False)
 
     return render_template(
         "medical_records.html",
-        records=records,
+        records=pagination.items,
+        pagination=pagination,
     )
 
 
@@ -958,15 +975,17 @@ def add_medical_record():
 
 @app.route("/prescriptions")
 def prescriptions():
-    prescriptions_list = (
+    page = request.args.get("page", 1, type=int)
+    pagination = (
         Prescription.query
         .order_by(Prescription.created_at.desc())
-        .all()
+        .paginate(page=page, per_page=20, error_out=False)
     )
 
     return render_template(
         "prescriptions.html",
-        prescriptions=prescriptions_list,
+        prescriptions=pagination.items,
+        pagination=pagination,
     )
 
 
@@ -1137,13 +1156,28 @@ def prescription_detail(prescription_id):
 
 @app.route("/medications")
 def medications():
-    medication_list = Medication.query.order_by(
-        Medication.name.asc()
-    ).all()
+    search = request.args.get("q", "").strip()
+    query = Medication.query
+
+    if search:
+        query = query.filter(
+            or_(
+                Medication.name.ilike(f"%{search}%"),
+                Medication.strength.ilike(f"%{search}%"),
+                Medication.dosage_form.ilike(f"%{search}%"),
+            )
+        )
+
+    page = request.args.get("page", 1, type=int)
+    pagination = query.order_by(Medication.name.asc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
 
     return render_template(
     "medications.html",
-    medications=medication_list,
+    medications=pagination.items,
+    pagination=pagination,
+    search=search,
     today=date.today(),
 )
 
@@ -1187,6 +1221,9 @@ def add_medication():
 
                 medication = Medication(
                     name=name,
+                    inventory_code=generate_public_id(
+                        Medication, "inventory_code", "INV-", 8
+                    ),
                     strength=strength or None,
                     dosage_form=dosage_form or None,
                     stock_quantity=stock_quantity,
@@ -1218,13 +1255,29 @@ def add_medication():
 
 @app.route("/appointments")
 def appointments():
-    all_appointments = Appointment.query.order_by(
+    search = request.args.get("q", "").strip()
+    query = Appointment.query.join(Appointment.patient)
+
+    if search:
+        conditions = [
+            Patient.patient_code.ilike(f"%{search}%"),
+            Patient.first_name.ilike(f"%{search}%"),
+            Patient.last_name.ilike(f"%{search}%"),
+        ]
+        if search.isdigit():
+            conditions.append(Appointment.id == int(search))
+        query = query.filter(or_(*conditions))
+
+    page = request.args.get("page", 1, type=int)
+    pagination = query.order_by(
         Appointment.appointment_at.desc()
-    ).all()
+    ).paginate(page=page, per_page=20, error_out=False)
 
     return render_template(
         "appointments.html",
-        appointments=all_appointments,
+        appointments=pagination.items,
+        pagination=pagination,
+        search=search,
     )
 
 
@@ -1337,18 +1390,51 @@ def health():
         }, 503
 
 
-
 @app.route("/billing")
 def billing():
-    bills = Bill.query.order_by(Bill.issued_at.desc()).all()
+    search = request.args.get("q", "").strip()
+    query = Bill.query.join(Bill.patient)
+
+    if search:
+        conditions = [
+            Patient.patient_code.ilike(f"%{search}%"),
+            Patient.first_name.ilike(f"%{search}%"),
+            Patient.last_name.ilike(f"%{search}%"),
+        ]
+
+        # Allow searching by numeric patient ID.
+        if search.isdigit():
+            conditions.append(Patient.id == int(search))
+
+        query = query.filter(or_(*conditions))
+
+    total_billed = query.with_entities(
+        db.func.coalesce(db.func.sum(Bill.total_amount), 0)
+    ).scalar()
+    total_paid = db.session.query(
+        db.func.coalesce(db.func.sum(Payment.amount), 0)
+    ).filter(
+        Payment.bill_id.in_(query.with_entities(Bill.id))
+    ).scalar()
+    total_billed = Decimal(str(total_billed or 0))
+    total_paid = Decimal(str(total_paid or 0))
+    total_pending = total_billed - total_paid
+
+    page = request.args.get("page", 1, type=int)
+    pagination = query.order_by(Bill.issued_at.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
 
     return render_template(
         "billing.html",
-        bills=bills,
+        bills=pagination.items,
+        pagination=pagination,
+        search=search,
+        total_billed=total_billed,
+        total_paid=total_paid,
+        total_pending=total_pending,
         today=date.today(),
     )
-
-
 
 @app.route("/billing/add", methods=["GET", "POST"])
 def add_bill():
@@ -1547,6 +1633,209 @@ def add_bill():
 
 
 
+@app.route("/billing/<int:bill_id>")
+def bill_detail(bill_id):
+    bill = db.get_or_404(Bill, bill_id)
+
+    amount_paid = sum(
+        (Decimal(str(payment.amount)) for payment in bill.payments),
+        Decimal("0.00")
+    )
+    balance = Decimal(str(bill.total_amount)) - amount_paid
+
+    return render_template(
+        "bill_detail.html",
+        bill=bill,
+        amount_paid=amount_paid,
+        balance=balance,
+    )
+
+
+@app.route("/billing/<int:bill_id>/edit", methods=["GET", "POST"])
+def edit_bill(bill_id):
+    bill = db.get_or_404(Bill, bill_id)
+
+    patients = Patient.query.order_by(Patient.first_name.asc()).all()
+    appointments = Appointment.query.order_by(
+        Appointment.appointment_at.desc()
+    ).all()
+    # Include inactive records so existing bill lines can still be displayed.
+    services = Service.query.order_by(Service.name.asc()).all()
+    medications_list = Medication.query.order_by(Medication.name.asc()).all()
+
+    original_service_ids = {
+        item.service_id for item in bill.items if item.service_id is not None
+    }
+    original_medication_ids = {
+        item.medication_id for item in bill.items if item.medication_id is not None
+    }
+
+    service_rows = [
+        {"id": str(item.service_id or ""), "quantity": str(item.quantity)}
+        for item in bill.items if item.service_id is not None
+    ]
+    medication_rows = [
+        {"id": str(item.medication_id or ""), "quantity": str(item.quantity)}
+        for item in bill.items if item.medication_id is not None
+    ]
+    if not service_rows:
+        service_rows = [{"id": "", "quantity": "1"}]
+    if not medication_rows:
+        medication_rows = [{"id": "", "quantity": "1"}]
+
+    if bill.status == "cancelled":
+        flash("Cancelled bills cannot be edited.", "error")
+        return redirect(url_for("bill_detail", bill_id=bill.id))
+
+    if request.method == "POST":
+        patient_id_raw = request.form.get("patient_id", "").strip()
+        appointment_id_raw = request.form.get("appointment_id", "").strip()
+        due_date_raw = request.form.get("due_date", "").strip()
+        service_ids = request.form.getlist("service_id")
+        service_quantities = request.form.getlist("service_quantity")
+        medication_ids = request.form.getlist("medication_id")
+        medication_quantities = request.form.getlist("medication_quantity")
+
+        service_rows = [
+            {"id": item_id.strip(), "quantity": quantity.strip()}
+            for item_id, quantity in zip(service_ids, service_quantities)
+        ]
+        medication_rows = [
+            {"id": item_id.strip(), "quantity": quantity.strip()}
+            for item_id, quantity in zip(medication_ids, medication_quantities)
+        ]
+        if not service_rows:
+            service_rows = [{"id": "", "quantity": "1"}]
+        if not medication_rows:
+            medication_rows = [{"id": "", "quantity": "1"}]
+
+        try:
+            if not patient_id_raw:
+                raise ValueError("Please select a patient.")
+
+            patient_id = int(patient_id_raw)
+            appointment_id = int(appointment_id_raw) if appointment_id_raw else None
+            patient = db.session.get(Patient, patient_id)
+            if patient is None:
+                raise ValueError("Please select a valid patient.")
+
+            if appointment_id is not None:
+                appointment = db.session.get(Appointment, appointment_id)
+                if appointment is None or appointment.patient_id != patient_id:
+                    raise ValueError("Select an appointment belonging to this patient.")
+
+            parsed_due_date = date.fromisoformat(due_date_raw) if due_date_raw else None
+            if len(service_ids) != len(service_quantities):
+                raise ValueError("Invalid service selections.")
+            if len(medication_ids) != len(medication_quantities):
+                raise ValueError("Invalid medication selections.")
+
+            items_to_bill = []
+            total_amount = Decimal("0.00")
+
+            for raw_id, raw_quantity in zip(service_ids, service_quantities):
+                raw_id, raw_quantity = raw_id.strip(), raw_quantity.strip()
+                if not raw_id and not raw_quantity:
+                    continue
+                if not raw_id or not raw_quantity:
+                    raise ValueError("Select a service and enter its quantity.")
+                service_id = int(raw_id)
+                quantity = int(raw_quantity)
+                service = db.session.get(Service, service_id)
+                if service is None or (not service.is_active and service_id not in original_service_ids):
+                    raise ValueError("Select a valid active service.")
+                if quantity <= 0:
+                    raise ValueError("Quantities must be greater than zero.")
+                unit_price = Decimal(str(service.unit_price))
+                total_amount += unit_price * quantity
+                items_to_bill.append({
+                    "service_id": service.id,
+                    "medication_id": None,
+                    "item_name": service.name,
+                    "quantity": quantity,
+                    "unit_price": unit_price,
+                })
+
+            for raw_id, raw_quantity in zip(medication_ids, medication_quantities):
+                raw_id, raw_quantity = raw_id.strip(), raw_quantity.strip()
+                if not raw_id and not raw_quantity:
+                    continue
+                if not raw_id or not raw_quantity:
+                    raise ValueError("Select a medication and enter its quantity.")
+                medication_id = int(raw_id)
+                quantity = int(raw_quantity)
+                medication = db.session.get(Medication, medication_id)
+                if medication is None or (not medication.is_active and medication_id not in original_medication_ids):
+                    raise ValueError("Select a valid active medication.")
+                if quantity <= 0:
+                    raise ValueError("Quantities must be greater than zero.")
+                unit_price = Decimal(str(medication.unit_price))
+                total_amount += unit_price * quantity
+                items_to_bill.append({
+                    "service_id": None,
+                    "medication_id": medication.id,
+                    "item_name": medication.name,
+                    "quantity": quantity,
+                    "unit_price": unit_price,
+                })
+
+            if not items_to_bill:
+                raise ValueError("Add at least one service or medication to the bill.")
+            if total_amount <= Decimal("0.00"):
+                raise ValueError("The bill total must be greater than zero.")
+
+            amount_paid = db.session.query(
+                db.func.coalesce(db.func.sum(Payment.amount), 0)
+            ).filter(Payment.bill_id == bill.id).scalar()
+            amount_paid = Decimal(str(amount_paid))
+            if total_amount < amount_paid:
+                raise ValueError(
+                    f"The new total ({total_amount:.2f}) cannot be less than the amount already paid ({amount_paid:.2f})."
+                )
+
+            # Update the existing bill; preserve invoice number, issue date and payments.
+            bill.patient_id = patient_id
+            bill.appointment_id = appointment_id
+            bill.due_date = parsed_due_date
+            bill.total_amount = total_amount
+            if amount_paid >= total_amount:
+                bill.status = "paid"
+            elif amount_paid > Decimal("0.00"):
+                bill.status = "partially_paid"
+            else:
+                bill.status = "unpaid"
+
+            # Replace line items only. Payment rows are deliberately untouched.
+            for existing_item in list(bill.items):
+                db.session.delete(existing_item)
+            db.session.flush()
+            for item_data in items_to_bill:
+                db.session.add(BillItem(bill_id=bill.id, **item_data))
+
+            db.session.commit()
+            flash("Bill updated successfully. Existing payments were preserved.", "success")
+            return redirect(url_for("bill_detail", bill_id=bill.id))
+
+        except (ValueError, TypeError, InvalidOperation) as error:
+            db.session.rollback()
+            flash(str(error) or "Please check the bill details.", "error")
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Failed to update bill %s", bill_id)
+            flash("Unable to update the bill. No changes were saved.", "error")
+
+    return render_template(
+        "edit_bill_form.html",
+        bill=bill,
+        patients=patients,
+        appointments=appointments,
+        services=services,
+        medications=medications_list,
+        service_rows=service_rows,
+        medication_rows=medication_rows,
+    )
+
+
 @app.route("/staff")
 def staff():
     search = request.args.get("q", "").strip()
@@ -1559,8 +1848,16 @@ def staff():
             Staff.phone.ilike(f"%{search}%"),
             Staff.email.ilike(f"%{search}%"),
         ))
-    staff_members = query.order_by(Staff.id.desc()).all()
-    return render_template("staff.html", staff_members=staff_members, search=search)
+    page = request.args.get("page", 1, type=int)
+    pagination = query.order_by(Staff.id.desc()).paginate(
+        page=page, per_page=20, error_out=False
+    )
+    return render_template(
+        "staff.html",
+        staff_members=pagination.items,
+        pagination=pagination,
+        search=search,
+    )
 
 
 @app.route("/staff/add", methods=["GET", "POST"])
@@ -1634,15 +1931,17 @@ def add_staff():
 
 @app.route("/payments")
 def payments():
-    payment_records = (
+    page = request.args.get("page", 1, type=int)
+    pagination = (
         Payment.query
         .order_by(Payment.paid_at.desc(), Payment.id.desc())
-        .all()
+        .paginate(page=page, per_page=20, error_out=False)
     )
 
     return render_template(
         "payments.html",
-        payments=payment_records,
+        payments=pagination.items,
+        pagination=pagination,
     )
 
 

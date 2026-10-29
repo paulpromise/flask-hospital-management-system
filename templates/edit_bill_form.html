@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Edit Bill</h1>
+        <p>Invoice: <strong>{{ bill.invoice_number }}</strong></p>
+    </div>
+    <a href="{{ url_for('bill_detail', bill_id=bill.id) }}" class="button button-secondary">Cancel</a>
+</div>
+
+<div class="form-card">
+    <form method="POST" action="{{ url_for('edit_bill', bill_id=bill.id) }}">
+        <section class="form-section">
+            <h2>Bill Information</h2>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="patient_id">Patient <span aria-hidden="true">*</span></label>
+                    <select id="patient_id" name="patient_id" required>
+                        <option value="">Select a patient</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient.id }}" {% if patient.id == bill.patient_id %}selected{% endif %}>
+                            {{ patient.first_name }} {{ patient.last_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="appointment_id">Appointment (optional)</label>
+                    <select id="appointment_id" name="appointment_id">
+                        <option value="">No appointment</option>
+                        {% for appointment in appointments %}
+                        <option value="{{ appointment.id }}" data-patient-id="{{ appointment.patient_id }}" {% if appointment.id == bill.appointment_id %}selected{% endif %}>
+                            #{{ appointment.id }} — {{ appointment.patient.first_name }} {{ appointment.patient.last_name }} — {{ appointment.appointment_at.strftime('%d %b %Y %H:%M') }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <small>Only appointments belonging to the selected patient can be saved.</small>
+                </div>
+                <div class="form-group">
+                    <label for="due_date">Due date</label>
+                    <input type="date" id="due_date" name="due_date" value="{{ bill.due_date.isoformat() if bill.due_date else '' }}">
+                </div>
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="section-heading-row">
+                <div>
+                    <h2>Services</h2>
+                    <p>Add, change, or remove service lines.</p>
+                </div>
+                <button type="button" class="button button-secondary" id="add-service">+ Add service</button>
+            </div>
+            <div id="service-rows" class="bill-line-list">
+                {% for row in service_rows %}
+                <div class="bill-line-row">
+                    <div class="form-group line-item-select">
+                        <label>Service</label>
+                        <select name="service_id">
+                            <option value="">Select a service</option>
+                            {% for service in services %}
+                            <option value="{{ service.id }}" {% if row.id == service.id|string %}selected{% endif %}>
+                                {{ service.name }} — {{ '%.2f'|format(service.unit_price) }}{% if not service.is_active %} (Inactive — existing item){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group line-quantity">
+                        <label>Quantity</label>
+                        <input type="number" name="service_quantity" min="1" step="1" value="{{ row.quantity if row.id else '' }}">
+                    </div>
+                    <button type="button" class="button button-danger remove-line" aria-label="Remove service">Remove</button>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <section class="form-section">
+            <div class="section-heading-row">
+                <div>
+                    <h2>Medications</h2>
+                    <p>Medication prices are taken from the medication records.</p>
+                </div>
+                <button type="button" class="button button-secondary" id="add-medication">+ Add medication</button>
+            </div>
+            <div id="medication-rows" class="bill-line-list">
+                {% for row in medication_rows %}
+                <div class="bill-line-row">
+                    <div class="form-group line-item-select">
+                        <label>Medication</label>
+                        <select name="medication_id">
+                            <option value="">Select a medication</option>
+                            {% for medication in medications %}
+                            <option value="{{ medication.id }}" {% if row.id == medication.id|string %}selected{% endif %}>
+                                {{ medication.name }} — {{ '%.2f'|format(medication.unit_price) }}{% if not medication.is_active %} (Inactive — existing item){% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group line-quantity">
+                        <label>Quantity</label>
+                        <input type="number" name="medication_quantity" min="1" step="1" value="{{ row.quantity if row.id else '' }}">
+                    </div>
+                    <button type="button" class="button button-danger remove-line" aria-label="Remove medication">Remove</button>
+                </div>
+                {% endfor %}
+            </div>
+        </section>
+
+        <div class="notice notice-warning">
+            Saving changes recalculates the bill total using current catalogue prices. Existing payment records will not be deleted. The new total cannot be lower than the amount already paid.
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('bill_detail', bill_id=bill.id) }}" class="button button-secondary">Cancel</a>
+            <button type="submit" class="button button-primary">Save Changes</button>
+        </div>
+    </form>
+</div>
+
+<template id="service-row-template">
+    <div class="bill-line-row">
+        <div class="form-group line-item-select">
+            <label>Service</label>
+            <select name="service_id">
+                <option value="">Select a service</option>
+                {% for service in services %}
+                {% if service.is_active %}<option value="{{ service.id }}">{{ service.name }} — {{ '%.2f'|format(service.unit_price) }}</option>{% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group line-quantity">
+            <label>Quantity</label>
+            <input type="number" name="service_quantity" min="1" step="1" value="1">
+        </div>
+        <button type="button" class="button button-danger remove-line" aria-label="Remove service">Remove</button>
+    </div>
+</template>
+<template id="medication-row-template">
+    <div class="bill-line-row">
+        <div class="form-group line-item-select">
+            <label>Medication</label>
+            <select name="medication_id">
+                <option value="">Select a medication</option>
+                {% for medication in medications %}
+                {% if medication.is_active %}<option value="{{ medication.id }}">{{ medication.name }} — {{ '%.2f'|format(medication.unit_price) }}</option>{% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group line-quantity">
+            <label>Quantity</label>
+            <input type="number" name="medication_quantity" min="1" step="1" value="1">
+        </div>
+        <button type="button" class="button button-danger remove-line" aria-label="Remove medication">Remove</button>
+    </div>
+</template>
+
+<script>
+(function () {
+    function addRow(buttonId, templateId, containerId) {
+        const button = document.getElementById(buttonId);
+        const template = document.getElementById(templateId);
+        const container = document.getElementById(containerId);
+        button.addEventListener('click', function () {
+            container.appendChild(template.content.cloneNode(true));
+        });
+    }
+
+    addRow('add-service', 'service-row-template', 'service-rows');
+    addRow('add-medication', 'medication-row-template', 'medication-rows');
+
+    document.addEventListener('click', function (event) {
+        const button = event.target.closest('.remove-line');
+        if (!button) return;
+        const row = button.closest('.bill-line-row');
+        const container = row.parentElement;
+        if (container.querySelectorAll('.bill-line-row').length > 1) {
+            row.remove();
+        } else {
+            row.querySelector('select').value = '';
+            const quantity = row.querySelector('input[type="number"]');
+            if (quantity) quantity.value = '';
+        }
+    });
+
+    const patientSelect = document.getElementById('patient_id');
+    const appointmentSelect = document.getElementById('appointment_id');
+    function filterAppointments() {
+        const patientId = patientSelect.value;
+        Array.from(appointmentSelect.options).forEach(function (option) {
+            if (!option.value) return;
+            const matches = option.dataset.patientId === patientId;
+            option.hidden = !matches;
+            option.disabled = !matches;
+            if (!matches && option.selected) appointmentSelect.value = '';
+        });
+    }
+    patientSelect.addEventListener('change', filterAppointments);
+    filterAppointments();
+})();
+</script>
+{% endblock %}

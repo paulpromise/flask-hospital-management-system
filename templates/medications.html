@@ -13,11 +13,28 @@
     </a>
 </div>
 
+<div class="search-container">
+    <form method="GET" action="{{ url_for('medications') }}" class="search-form">
+        <input
+            type="search"
+            name="q"
+            placeholder="Search by medication, strength, or dosage form..."
+            value="{{ search }}"
+            aria-label="Search medications"
+        >
+        <button type="submit" class="button button-primary">Search</button>
+        {% if search %}
+            <a href="{{ url_for('medications') }}" class="button">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
 <div class="table-wrapper">
     <table class="data-table">
         <thead>
             <tr>
                 <th>Name</th>
+                <th>Inventory</th>
                 <th>Strength</th>
                 <th>Dosage Form</th>
                 <th>Stock</th>
@@ -32,6 +49,7 @@
             {% for medication in medications %}
             <tr>
                 <td>{{ medication.name }}</td>
+                <td>{{ medication.inventory_code }}</td>
                 <td>{{ medication.strength or '-' }}</td>
                 <td>{{ medication.dosage_form or '-' }}</td>
                 <td>{{ medication.stock_quantity }}</td>
@@ -59,12 +77,17 @@
 
             {% else %}
             <tr>
-                <td colspan="8" class="empty-state">
-                    No medications have been added yet.
+                <td colspan="9" class="empty-state">
+                    {% if search %}
+                        No medications matched "{{ search }}".
+                    {% else %}
+                        No medications have been added yet.
+                    {% endif %}
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
 </div>
+{% include "_pagination.html" %}
 {% endblock %}

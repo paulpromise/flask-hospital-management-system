@@ -13,6 +13,27 @@
     </a>
 </div>
 
+
+
+<div class="search-container">
+    <form method="GET" action="{{ url_for('staff') }}" class="search-form">
+        <input
+            type="search"
+            name="q"
+            placeholder="Search staff by ID, name, job title, phone, email or department..."
+            value="{{ search }}"
+            aria-label="Search staff"
+        >
+        <button type="submit" class="button button-primary">Search</button>
+
+        {% if search %}
+            <a href="{{ url_for('staff') }}" class="button">Clear</a>
+        {% endif %}
+    </form>
+</div>
+
+
+
 <div class="table-wrapper">
     <table class="data-table">
         <thead>
@@ -56,4 +77,5 @@
         </tbody>
     </table>
 </div>
+{% include "_pagination.html" %}
 {% endblock %}

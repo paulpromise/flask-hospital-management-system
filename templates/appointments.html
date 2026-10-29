@@ -1,4 +1,3 @@
-
 {% extends "base.html" %}
 
 {% block title %}Appointments | Hospital HMS{% endblock %}
@@ -22,11 +21,25 @@
     {% endfor %}
 {% endwith %}
 
+<form method="GET" action="{{ url_for('appointments') }}" class="search-form">
+    <input
+        type="search"
+        name="q"
+        placeholder="Search by patient name or patient ID..."
+        value="{{ search }}"
+        aria-label="Search appointments by patient name or ID"
+    >
+    <button type="submit" class="button button-primary">Search</button>
+    {% if search %}
+        <a href="{{ url_for('appointments') }}" class="button">Clear</a>
+    {% endif %}
+</form>
+
 <div class="panel">
     <div class="panel-heading">
         <div>
             <h3>All Appointments</h3>
-            <p>{{ appointments|length }} appointment(s)</p>
+            <p>{{ pagination.total }} appointment(s)</p>
         </div>
     </div>
 
@@ -35,10 +48,10 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>Patient ID</th>
                     <th>Patient</th>
                     <th>Doctor</th>
-                    <th>Date & Time</th>
+                    <th>Date &amp; Time</th>
                     <th>Reason</th>
                     <th>Status</th>
                     <th>Update Status</th>
@@ -47,7 +60,7 @@
             <tbody>
                 {% for appointment in appointments %}
                 <tr>
-                    <td>#{{ appointment.id }}</td>
+                    <td><strong>{{ appointment.patient.patient_code }}</strong></td>
                     <td>
                         {{ appointment.patient.first_name }}
                         {{ appointment.patient.last_name }}
@@ -91,13 +104,15 @@
     </div>
     {% else %}
     <div class="empty-state">
-        <h3>No appointments yet</h3>
-        <p>Schedule the first appointment to see it here.</p>
+        <h3>No appointments found</h3>
+        <p>{% if search %}Try a different patient name or ID.{% else %}Schedule the first appointment to see it here.{% endif %}</p>
         <a class="button button-primary" href="{{ url_for('add_appointment') }}">
             Schedule Appointment
         </a>
     </div>
     {% endif %}
 </div>
+
+{% include "_pagination.html" %}
 
 {% endblock %}

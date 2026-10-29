@@ -28,24 +28,24 @@
         <p class="nav-heading">MAIN MENU</p>
 
         <nav class="navigation">
-            <a href="{{ url_for('home') }}" class="nav-link active">▦ Dashboard</a>
-            <a href="{{ url_for('patients') }}" class="nav-link">♙ Patients</a>
-            <a href="{{ url_for('doctors') }}" class="nav-link">✚ Doctors</a>
-            <a href="{{ url_for('departments') }}" class="nav-link">▤ Departments</a>
-            <a href="{{ url_for('appointments') }}" class="nav-link">▣ Appointments</a>
+            <a href="{{ url_for('home') }}" class="nav-link{% if request.endpoint == 'home' %} active{% endif %}">▦ Dashboard</a>
+            <a href="{{ url_for('patients') }}" class="nav-link{% if request.endpoint in ['patients', 'add_patient'] %} active{% endif %}">♙ Patients</a>
+            <a href="{{ url_for('doctors') }}" class="nav-link{% if request.endpoint in ['doctors', 'add_doctor'] %} active{% endif %}">✚ Doctors</a>
+            <a href="{{ url_for('departments') }}" class="nav-link{% if request.endpoint in ['departments', 'add_department'] %} active{% endif %}">▤ Departments</a>
+            <a href="{{ url_for('appointments') }}" class="nav-link{% if request.endpoint in ['appointments', 'add_appointment', 'update_appointment_status'] %} active{% endif %}">▣ Appointments</a>
 
             <p class="nav-heading">CLINICAL</p>
-            <a href="{{ url_for('medical_records') }}" class="nav-link">▧ Medical Records</a>
+            <a href="{{ url_for('medical_records') }}" class="nav-link{% if request.endpoint in ['medical_records', 'add_medical_record'] %} active{% endif %}">▧ Medical Records</a>
             
-            <a href="{{ url_for('prescriptions') }}" class="nav-link">▧ Prescriptions</a>
+            <a href="{{ url_for('prescriptions') }}" class="nav-link{% if request.endpoint in ['prescriptions', 'add_prescription', 'prescription_detail'] %} active{% endif %}">▧ Prescriptions</a>
 
-            <a href="{{ url_for('medications') }}" class="nav-link">▧ Medications</a>
+            <a href="{{ url_for('medications') }}" class="nav-link{% if request.endpoint in ['medications', 'add_medication'] %} active{% endif %}">▧ Medications</a>
 
                         
             <p class="nav-heading">ADMINISTRATION</p>
-            <a href="{{ url_for('billing') }}" class="nav-link">▧ Billing</a>
-            <a href="{{ url_for('payments') }}" class="nav-link">▧ Payments</a>
-            <a href="{{ url_for('staff') }}" class="nav-link">Staff Management</a>
+            <a href="{{ url_for('billing') }}" class="nav-link{% if request.endpoint in ['billing', 'add_bill', 'bill_detail', 'edit_bill'] %} active{% endif %}">▧ Billing</a>
+            <a href="{{ url_for('payments') }}" class="nav-link{% if request.endpoint in ['payments', 'add_payment'] %} active{% endif %}">▧ Payments</a>
+            <a href="{{ url_for('staff') }}" class="nav-link{% if request.endpoint in ['staff', 'add_staff'] %} active{% endif %}">Staff Management</a>
 
                 
 
@@ -70,6 +70,15 @@
         </header>
 
         <section class="page-content">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ 'error' if category == 'error' else 'success' }}" role="alert">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
             {% block content %}{% endblock %}
         </section>
 

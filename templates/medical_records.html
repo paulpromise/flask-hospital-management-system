@@ -27,7 +27,7 @@
     <div class="panel-heading">
         <div>
             <h3>Consultation History</h3>
-            <p>{{ records|length }} record(s)</p>
+            <p>{{ pagination.total }} record(s)</p>
         </div>
     </div>
 
@@ -36,8 +36,9 @@
         <table class="data-table">
             <thead>
                 <tr>
-                    <th>ID</th>
+                    <th>Record ID</th>
                     <th>Patient</th>
+                    <th>Patient ID</th>
                     <th>Doctor</th>
                     <th>Consultation Date</th>
                     <th>Diagnosis</th>
@@ -53,6 +54,7 @@
                         {{ record.patient.first_name }}
                         {{ record.patient.last_name }}
                     </td>
+                    <td><strong>{{ record.patient.patient_code }}</strong></td>
                     <td>
                         Dr. {{ record.doctor.first_name }}
                         {{ record.doctor.last_name }}
@@ -79,5 +81,7 @@
     </div>
     {% endif %}
 </div>
+
+{% include "_pagination.html" %}
 
 {% endblock %}

@@ -10,35 +10,70 @@
 </div>
 
 <div class="form-panel">
-    <form method="POST" action="{{ url_for('add_bill') }}">
+    <form method="POST" action="{{ url_for('add_bill') }}" id="bill-form">
 
         <!-- Patient and appointment details -->
         <div class="form-grid">
-            <div class="form-group">
-                <label for="patient_id">Patient *</label>
-                <select id="patient_id" name="patient_id" required>
-                    <option value="">Select patient</option>
+
+            <!-- Searchable patient field -->
+            <div class="form-group patient-search-group">
+                <label for="patient-search">Patient *</label>
+
+                <input
+                    type="text"
+                    id="patient-search"
+                    placeholder="Search by patient name or code..."
+                    autocomplete="off"
+                    value=""
+                    required
+                >
+
+                <input
+                    type="hidden"
+                    id="patient_id"
+                    name="patient_id"
+                    value="{{ request.form.get('patient_id', '') }}"
+                >
+
+                <div
+                    id="patient-search-results"
+                    class="patient-search-results"
+                    hidden
+                >
                     {% for patient in patients %}
-                    <option value="{{ patient.id }}"
-                        {% if request.form.get('patient_id', '') == patient.id|string %}
-                            selected
-                        {% endif %}>
-                        {{ patient.first_name }} {{ patient.last_name }}
-                        — {{ patient.patient_code }}
-                    </option>
+                    <button
+                        type="button"
+                        class="patient-search-option"
+                        data-patient-id="{{ patient.id }}"
+                        data-patient-name="{{ patient.first_name }} {{ patient.last_name }}"
+                        data-patient-code="{{ patient.patient_code }}"
+                    >
+                        <span class="patient-option-name">
+                            {{ patient.first_name }} {{ patient.last_name }}
+                        </span>
+                    </button>
                     {% endfor %}
-                </select>
+                </div>
+
+                <small id="patient-search-message">
+                    Start typing to search for a patient.
+                </small>
             </div>
 
+            <!-- Appointment -->
             <div class="form-group">
                 <label for="appointment_id">Appointment (Optional)</label>
+
                 <select id="appointment_id" name="appointment_id">
                     <option value="">No appointment linked</option>
+
                     {% for appointment in appointments %}
-                    <option value="{{ appointment.id }}"
+                    <option
+                        value="{{ appointment.id }}"
                         {% if request.form.get('appointment_id', '') == appointment.id|string %}
                             selected
-                        {% endif %}>
+                        {% endif %}
+                    >
                         #{{ appointment.id }} —
                         {{ appointment.patient.first_name }}
                         {{ appointment.patient.last_name }} —
@@ -48,8 +83,10 @@
                 </select>
             </div>
 
+            <!-- Due date -->
             <div class="form-group">
                 <label for="due_date">Due Date (Optional)</label>
+
                 <input
                     type="date"
                     id="due_date"
@@ -57,6 +94,7 @@
                     value="{{ request.form.get('due_date', '') }}"
                 >
             </div>
+
         </div>
 
         <hr>
@@ -67,16 +105,21 @@
 
         <div id="services-container">
             <div class="form-grid bill-item-row">
+
                 <div class="form-group">
                     <label>Service</label>
+
                     <select name="service_id">
                         <option value="">Select service</option>
+
                         {% for service in services %}
-                        <option value="{{ service.id }}"
+                        <option
+                            value="{{ service.id }}"
                             {% if request.form.getlist('service_id')|length > 0
                                   and request.form.getlist('service_id')[0] == service.id|string %}
                                 selected
-                            {% endif %}>
+                            {% endif %}
+                        >
                             {{ service.name }} —
                             {{ "%.2f"|format(service.unit_price) }}
                         </option>
@@ -86,6 +129,7 @@
 
                 <div class="form-group">
                     <label>Quantity</label>
+
                     <input
                         type="number"
                         name="service_quantity"
@@ -98,17 +142,23 @@
 
                 <div class="form-group">
                     <label>Action</label>
-                    <button type="button"
-                            class="button button-secondary remove-item">
+
+                    <button
+                        type="button"
+                        class="button button-secondary remove-item"
+                    >
                         Remove
                     </button>
                 </div>
+
             </div>
         </div>
 
-        <button type="button"
-                id="add-service"
-                class="button button-secondary">
+        <button
+            type="button"
+            id="add-service"
+            class="button button-secondary"
+        >
             + Add Another Service
         </button>
 
@@ -120,16 +170,21 @@
 
         <div id="medications-container">
             <div class="form-grid bill-item-row">
+
                 <div class="form-group">
                     <label>Medication</label>
+
                     <select name="medication_id">
                         <option value="">Select medication</option>
+
                         {% for medication in medications %}
-                        <option value="{{ medication.id }}"
+                        <option
+                            value="{{ medication.id }}"
                             {% if request.form.getlist('medication_id')|length > 0
                                   and request.form.getlist('medication_id')[0] == medication.id|string %}
                                 selected
-                            {% endif %}>
+                            {% endif %}
+                        >
                             {{ medication.name }}
                             {% if medication.strength %}
                                 ({{ medication.strength }})
@@ -142,6 +197,7 @@
 
                 <div class="form-group">
                     <label>Quantity</label>
+
                     <input
                         type="number"
                         name="medication_quantity"
@@ -154,17 +210,23 @@
 
                 <div class="form-group">
                     <label>Action</label>
-                    <button type="button"
-                            class="button button-secondary remove-item">
+
+                    <button
+                        type="button"
+                        class="button button-secondary remove-item"
+                    >
                         Remove
                     </button>
                 </div>
+
             </div>
         </div>
 
-        <button type="button"
-                id="add-medication"
-                class="button button-secondary">
+        <button
+            type="button"
+            id="add-medication"
+            class="button button-secondary"
+        >
             + Add Another Medication
         </button>
 
@@ -172,8 +234,10 @@
 
         <!-- Form actions -->
         <div class="form-actions">
-            <a href="{{ url_for('billing') }}"
-               class="button button-secondary">
+            <a
+                href="{{ url_for('billing') }}"
+                class="button button-secondary"
+            >
                 Cancel
             </a>
 
@@ -187,6 +251,80 @@
 
 <script>
 document.addEventListener("DOMContentLoaded", function () {
+    // ----------------------------------------
+    // Patient search
+    // ----------------------------------------
+    const patientSearch = document.getElementById("patient-search");
+    const patientId = document.getElementById("patient_id");
+    const patientResults = document.getElementById("patient-search-results");
+    const patientMessage = document.getElementById("patient-search-message");
+    const billForm = document.getElementById("bill-form");
+
+    const patientOptions = Array.from(
+        patientResults.querySelectorAll(".patient-search-option")
+    );
+
+    function filterPatients() {
+        const query = patientSearch.value.trim().toLowerCase();
+        let matchCount = 0;
+
+        patientOptions.forEach(function (option) {
+            const name = option.dataset.patientName.toLowerCase();
+            const code = option.dataset.patientCode.toLowerCase();
+
+            const matches =
+                query.length > 0 &&
+                (name.includes(query) || code.includes(query));
+
+            option.hidden = !matches;
+
+            if (matches) {
+                matchCount++;
+            }
+        });
+
+        patientResults.hidden = query.length === 0 || matchCount === 0;
+
+        if (query.length === 0) {
+            patientMessage.textContent =
+                "Start typing to search for a patient.";
+        } else if (matchCount === 0) {
+            patientMessage.textContent = "No matching patients found.";
+        } else {
+            patientMessage.textContent =
+                matchCount + " matching patient(s) found.";
+        }
+    }
+
+    patientSearch.addEventListener("input", function () {
+        // Clear the selected ID whenever the search changes.
+        patientId.value = "";
+        filterPatients();
+    });
+
+    patientOptions.forEach(function (option) {
+        option.addEventListener("click", function () {
+            patientId.value = this.dataset.patientId;
+
+            patientSearch.value = this.dataset.patientName;
+
+            patientResults.hidden = true;
+            patientMessage.textContent = "Patient selected.";
+            patientSearch.setCustomValidity("");
+        });
+    });
+
+    patientSearch.addEventListener("focus", filterPatients);
+
+    document.addEventListener("click", function (event) {
+        if (!event.target.closest(".patient-search-group")) {
+            patientResults.hidden = true;
+        }
+    });
+
+    // ----------------------------------------
+    // Add and remove service/medication rows
+    // ----------------------------------------
     function setupItemRows(containerId, addButtonId) {
         const container = document.getElementById(containerId);
         const addButton = document.getElementById(addButtonId);
@@ -232,6 +370,25 @@ document.addEventListener("DOMContentLoaded", function () {
 
     setupItemRows("services-container", "add-service");
     setupItemRows("medications-container", "add-medication");
+
+    // ----------------------------------------
+    // Validate patient selection before submit
+    // ----------------------------------------
+    billForm.addEventListener("submit", function (event) {
+        if (!patientId.value) {
+            event.preventDefault();
+
+            patientSearch.setCustomValidity(
+                "Please search for and select a patient from the results."
+            );
+
+            patientSearch.reportValidity();
+            patientSearch.focus();
+            return;
+        }
+
+        patientSearch.setCustomValidity("");
+    });
 });
 </script>
 {% endblock %}

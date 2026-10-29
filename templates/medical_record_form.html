@@ -28,47 +28,53 @@
         <div class="form-grid">
             <div class="form-group">
                 <label for="patient_id">Patient *</label>
-                <select id="patient_id" name="patient_id" required>
-                    <option value="">Select patient</option>
-                    {% for patient in patients %}
-                    <option value="{{ patient.id }}"
-                        {% if request.form.get('patient_id', '')|string == patient.id|string %}selected{% endif %}>
-                        {{ patient.first_name }} {{ patient.last_name }}
-                        (#{{ patient.id }})
-                    </option>
-                    {% endfor %}
-                </select>
+                <div class="searchable-select">
+                    <input type="search" id="patient-search" placeholder="Search patient by name or ID..." autocomplete="off">
+                    <select id="patient_id" name="patient_id" required>
+                        <option value="">Select patient</option>
+                        {% for patient in patients %}
+                        <option value="{{ patient.id }}"
+                            data-search="{{ patient.first_name }} {{ patient.last_name }} {{ patient.patient_code }}"
+                            {% if request.form.get('patient_id', '')|string == patient.id|string %}selected{% endif %}>
+                            {{ patient.first_name }} {{ patient.last_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">
                 <label for="doctor_id">Doctor *</label>
-                <select id="doctor_id" name="doctor_id" required>
-                    <option value="">Select doctor</option>
-                    {% for doctor in doctors %}
-                    <option value="{{ doctor.id }}"
-                        {% if request.form.get('doctor_id', '')|string == doctor.id|string %}selected{% endif %}>
-                        Dr. {{ doctor.first_name }} {{ doctor.last_name }}
-                    </option>
-                    {% endfor %}
-                </select>
+                <div class="searchable-select">
+                    <input type="search" id="doctor-search" placeholder="Search doctor by name or ID..." autocomplete="off">
+                    <select id="doctor_id" name="doctor_id" required>
+                        <option value="">Select doctor</option>
+                        {% for doctor in doctors %}
+                        <option value="{{ doctor.id }}"
+                            data-search="{{ doctor.first_name }} {{ doctor.last_name }} {{ doctor.doctor_code }}"
+                            {% if request.form.get('doctor_id', '')|string == doctor.id|string %}selected{% endif %}>
+                            Dr. {{ doctor.first_name }} {{ doctor.last_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
 
             <div class="form-group full-width">
                 <label for="appointment_id">Completed Appointment (Optional)</label>
-                <select id="appointment_id" name="appointment_id">
-                    <option value="">No linked appointment</option>
-                    {% for appointment in appointments %}
-                    <option value="{{ appointment.id }}"
-                        {% if request.form.get('appointment_id', '')|string == appointment.id|string %}selected{% endif %}>
-                        #{{ appointment.id }} —
-                        {{ appointment.patient.first_name }}
-                        {{ appointment.patient.last_name }} /
-                        Dr. {{ appointment.doctor.first_name }}
-                        {{ appointment.doctor.last_name }} —
-                        {{ appointment.appointment_at.strftime('%d %b %Y, %H:%M') }}
-                    </option>
-                    {% endfor %}
-                </select>
+                <div class="searchable-select">
+                    <input type="search" id="appointment-search" placeholder="Search completed appointment..." autocomplete="off">
+                    <select id="appointment_id" name="appointment_id">
+                        <option value="">No linked appointment</option>
+                        {% for appointment in appointments %}
+                        <option value="{{ appointment.id }}"
+                            data-search="{{ appointment.id }} {{ appointment.patient.first_name }} {{ appointment.patient.last_name }} {{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }} {{ appointment.appointment_at.strftime('%d %b %Y') }}"
+                            {% if request.form.get('appointment_id', '')|string == appointment.id|string %}selected{% endif %}>
+                            {{ appointment.patient.first_name }} {{ appointment.patient.last_name }} — Dr. {{ appointment.doctor.first_name }} {{ appointment.doctor.last_name }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
                 <small class="muted-text">
                     If selected, the appointment must match the chosen patient and doctor.
                 </small>
@@ -102,5 +108,35 @@
         </div>
     </form>
 </div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function setupSearch(inputId, selectId) {
+        const input = document.getElementById(inputId);
+        const select = document.getElementById(selectId);
+        const options = Array.from(select.options);
+
+        function filterOptions() {
+            const query = input.value.trim().toLowerCase();
+            options.forEach(function (option) {
+                option.hidden = Boolean(option.value) &&
+                    !(option.dataset.search || option.textContent).toLowerCase().includes(query);
+            });
+        }
+
+        const selected = select.options[select.selectedIndex];
+        if (selected && selected.value) input.value = selected.textContent.trim();
+        input.addEventListener("input", filterOptions);
+        select.addEventListener("change", function () {
+            input.value = select.options[select.selectedIndex].textContent.trim();
+            filterOptions();
+        });
+    }
+
+    setupSearch("patient-search", "patient_id");
+    setupSearch("doctor-search", "doctor_id");
+    setupSearch("appointment-search", "appointment_id");
+});
+</script>
 
 {% endblock %}

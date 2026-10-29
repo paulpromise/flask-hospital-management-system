@@ -1,17 +1,24 @@
-/* Form panel */
+
+/* ========================================
+   Form Panel
+======================================== */
 .form-panel {
     max-width: 900px;
     border-radius: var(--radius-lg);
 }
 
-/* Form grid */
+/* ========================================
+   Form Grid
+======================================== */
 .form-grid {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 22px;
 }
 
-/* Form groups */
+/* ========================================
+   Form Groups
+======================================== */
 .form-group {
     display: flex;
     flex-direction: column;
@@ -23,7 +30,9 @@
     font-size: 13px;
 }
 
-/* Form fields */
+/* ========================================
+   Form Fields
+======================================== */
 .form-group input,
 .form-group select,
 .form-group textarea {
@@ -35,13 +44,71 @@
     background: white;
     color: var(--text);
     font: inherit;
+    box-sizing: border-box;
 }
 
 .form-group textarea {
     resize: vertical;
 }
 
-/* Focus states */
+.searchable-select {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.searchable-select input[type="search"] {
+    min-height: 38px;
+    padding: 9px 12px;
+    font-size: 13px;
+}
+
+.searchable-options {
+    position: absolute;
+    top: calc(100% - 1px);
+    left: 0;
+    right: 0;
+    z-index: 20;
+    display: none;
+    max-height: 240px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--white);
+    box-shadow: var(--shadow-md);
+}
+
+.searchable-select.is-open .searchable-options {
+    display: block;
+}
+
+.searchable-option {
+    display: block;
+    width: 100%;
+    padding: 11px 12px;
+    border: 0;
+    border-bottom: 1px solid var(--border);
+    background: var(--white);
+    color: var(--text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.searchable-option:last-child {
+    border-bottom: 0;
+}
+
+.searchable-option:hover,
+.searchable-option:focus {
+    background: var(--surface-hover);
+    outline: none;
+}
+
+/* ========================================
+   Focus States
+======================================== */
 .form-group input:focus,
 .form-group select:focus,
 .form-group textarea:focus {
@@ -49,12 +116,16 @@
     border-color: var(--wine-plum);
 }
 
-/* Full-width form fields */
+/* ========================================
+   Full-Width Form Fields
+======================================== */
 .full-width {
     grid-column: 1 / -1;
 }
 
-/* Form actions */
+/* ========================================
+   Form Actions
+======================================== */
 .form-actions {
     display: flex;
     justify-content: flex-end;
@@ -64,7 +135,9 @@
     border-top: 1px solid var(--border);
 }
 
-/* Inline forms */
+/* ========================================
+   Inline Forms
+======================================== */
 .inline-form {
     display: inline-flex;
     align-items: center;
@@ -79,4 +152,100 @@
     background: white;
     color: var(--text);
     font: inherit;
+}
+
+/* ========================================
+   Searchable Patient Dropdown
+======================================== */
+.patient-search-group {
+    position: relative;
+    min-width: 0;
+}
+
+.patient-search-group input[type="text"] {
+    width: 100%;
+}
+
+.patient-search-results {
+    position: absolute;
+    top: calc(100% - 24px);
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    max-height: 260px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+.patient-search-results[hidden],
+.patient-search-option[hidden] {
+    display: none;
+}
+
+.patient-search-option {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-bottom: 1px solid var(--border);
+    background: white;
+    color: var(--text);
+    text-align: left;
+    cursor: pointer;
+    font: inherit;
+    transition: background 0.15s ease;
+}
+
+.patient-search-option:last-child {
+    border-bottom: none;
+}
+
+.patient-search-option:hover,
+.patient-search-option:focus {
+    background: #f5e9e2;
+    outline: none;
+}
+
+.patient-option-name {
+    display: block;
+    font-weight: 600;
+}
+
+.patient-option-code {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+#patient-search-message {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+}
+
+/* ========================================
+   Responsive Layout
+======================================== */
+@media (max-width: 768px) {
+    .form-grid {
+        grid-template-columns: minmax(0, 1fr);
+        gap: 16px;
+    }
+
+    .form-actions {
+        flex-wrap: wrap;
+    }
+
+    .form-actions > * {
+        flex: 1;
+        text-align: center;
+    }
+
+    .patient-search-results {
+        max-height: 220px;
+    }
 }
