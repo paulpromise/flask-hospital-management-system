@@ -42,11 +42,11 @@
             <div class="form-group full-width">
                 <label for="patient_id">Patient *</label>
                 <div class="searchable-select" data-searchable-select>
-                    <input type="search" id="patient-search" placeholder="Select or search patient by name..." autocomplete="off" required>
+                    <input type="search" id="patient-search" placeholder="Select or search patient by name or ID..." autocomplete="off" required>
                     <input type="hidden" id="patient_id" name="patient_id" value="{{ request.form.get('patient_id', '') }}">
                     <div class="searchable-options" id="patient-options">
                         {% for patient in patients %}
-                        <button type="button" class="searchable-option" data-value="{{ patient.id }}" data-search="{{ patient.first_name }} {{ patient.last_name }} {{ patient.patient_code }} {{ patient.id }}">
+                        <button type="button" class="searchable-option" data-value="{{ patient.id }}" data-id="{{ patient.id }}" data-code="{{ patient.patient_code|lower }}" data-search="{{ patient.first_name }} {{ patient.last_name }} {{ patient.patient_code }} {{ patient.id }} #{{ patient.id }}">
                             {{ patient.first_name }} {{ patient.last_name }}
                         </button>
                         {% endfor %}
@@ -57,11 +57,11 @@
             <div class="form-group full-width">
                 <label for="doctor_id">Doctor *</label>
                 <div class="searchable-select" data-searchable-select>
-                    <input type="search" id="doctor-search" placeholder="Select or search doctor by name..." autocomplete="off" required>
+                    <input type="search" id="doctor-search" placeholder="Select or search doctor by name or ID..." autocomplete="off" required>
                     <input type="hidden" id="doctor_id" name="doctor_id" value="{{ request.form.get('doctor_id', '') }}">
                     <div class="searchable-options" id="doctor-options">
                         {% for doctor in doctors %}
-                        <button type="button" class="searchable-option" data-value="{{ doctor.id }}" data-search="{{ doctor.first_name }} {{ doctor.last_name }} {{ doctor.doctor_code }} {{ doctor.id }}">
+                        <button type="button" class="searchable-option" data-value="{{ doctor.id }}" data-id="{{ doctor.id }}" data-code="{{ doctor.doctor_code|lower }}" data-search="{{ doctor.first_name }} {{ doctor.last_name }} {{ doctor.doctor_code }} {{ doctor.id }} #{{ doctor.id }}">
                             Dr. {{ doctor.first_name }} {{ doctor.last_name }}
                         </button>
                         {% endfor %}
@@ -106,12 +106,24 @@ document.addEventListener("DOMContentLoaded", function () {
         const options = Array.from(document.getElementById(optionsId).querySelectorAll(".searchable-option"));
         const container = input.closest(".searchable-select");
 
+        function selectOption(option) {
+            hidden.value = option.dataset.value;
+            input.value = option.textContent.trim();
+            input.setCustomValidity("");
+            filterOptions(false);
+        }
+
         function filterOptions(showOptions) {
             const query = input.value.trim().toLowerCase();
             options.forEach(function (option) {
                 option.hidden = !showOptions || !option.dataset.search.toLowerCase().includes(query);
             });
             container.classList.toggle("is-open", showOptions && options.some(function (option) { return !option.hidden; }));
+
+            const exactMatch = options.find(function (option) {
+                return query && (query === option.dataset.id || query === "#" + option.dataset.id || query === option.dataset.code);
+            });
+            if (showOptions && exactMatch) selectOption(exactMatch);
         }
 
         const selected = options.find(function (option) { return option.dataset.value === hidden.value; });
@@ -122,12 +134,20 @@ document.addEventListener("DOMContentLoaded", function () {
             hidden.value = "";
             filterOptions(true);
         });
+        input.addEventListener("keydown", function (event) {
+            if (event.key !== "Enter") return;
+            const query = input.value.trim().toLowerCase();
+            const exactMatch = options.find(function (option) {
+                return query && (query === option.dataset.id || query === "#" + option.dataset.id || query === option.dataset.code);
+            });
+            if (exactMatch) {
+                event.preventDefault();
+                selectOption(exactMatch);
+            }
+        });
         options.forEach(function (option) {
             option.addEventListener("click", function () {
-                hidden.value = option.dataset.value;
-                input.value = option.textContent.trim();
-                input.setCustomValidity("");
-                filterOptions(false);
+                selectOption(option);
             });
         });
 
