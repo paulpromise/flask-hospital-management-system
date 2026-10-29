@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Hospital Management System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/layout.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/components.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/billing.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand">
+            <div class="brand-icon">H</div>
+            <div>
+                <h2>Hospital HMS</h2>
+                <p>Management System</p>
+            </div>
+        </div>
+
+        <p class="nav-heading">MAIN MENU</p>
+
+        <nav class="navigation">
+            <a href="{{ url_for('home') }}" class="nav-link active">▦ Dashboard</a>
+            <a href="{{ url_for('patients') }}" class="nav-link">♙ Patients</a>
+            <a href="{{ url_for('doctors') }}" class="nav-link">✚ Doctors</a>
+            <a href="{{ url_for('departments') }}" class="nav-link">▤ Departments</a>
+            <a href="{{ url_for('appointments') }}" class="nav-link">▣ Appointments</a>
+
+            <p class="nav-heading">CLINICAL</p>
+            <a href="{{ url_for('medical_records') }}" class="nav-link">▧ Medical Records</a>
+            
+            <a href="{{ url_for('prescriptions') }}" class="nav-link">▧ Prescriptions</a>
+
+            <a href="{{ url_for('medications') }}" class="nav-link">▧ Medications</a>
+
+                        
+            <p class="nav-heading">ADMINISTRATION</p>
+            <a href="{{ url_for('billing') }}" class="nav-link">▧ Billing</a>
+            <a href="{{ url_for('payments') }}" class="nav-link">▧ Payments</a>
+            <a href="{{ url_for('staff') }}" class="nav-link">Staff Management</a>
+
+                
+
+        </nav>
+
+        <div class="sidebar-footer">
+            <span class="status-dot"></span>
+            System connected
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">HOSPITAL MANAGEMENT</p>
+                <h1>{% block page_heading %}Dashboard{% endblock %}</h1>
+            </div>
+            <div class="admin-label">
+                <span class="avatar">A</span>
+                <span>Administrator</span>
+            </div>
+        </header>
+
+        <section class="page-content">
+            {% block content %}{% endblock %}
+        </section>
+
+        <footer class="footer">
+            Hospital Management System
+            <span>© 2026</span>
+        </footer>
+    </main>
+</body>
+</html>

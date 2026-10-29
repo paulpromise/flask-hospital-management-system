@@ -1,0 +1,5 @@
+CREATE DATABASE hospitaldb CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+
+CREATE USER 'hospitaluser'@'localhost'
+IDENTIFIED BY 'p@$$word_2026!';

@@ -1,0 +1,70 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Medications</h1>
+        <p>Manage medication inventory and stock levels.</p>
+    </div>
+
+    <a href="{{ url_for('add_medication') }}" class="button button-primary">
+        + Add Medication
+    </a>
+</div>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Strength</th>
+                <th>Dosage Form</th>
+                <th>Stock</th>
+                <th>Reorder Level</th>
+                <th>Unit Price</th>
+                <th>Expiry Date</th>
+                <th>Stock Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for medication in medications %}
+            <tr>
+                <td>{{ medication.name }}</td>
+                <td>{{ medication.strength or '-' }}</td>
+                <td>{{ medication.dosage_form or '-' }}</td>
+                <td>{{ medication.stock_quantity }}</td>
+                <td>{{ medication.reorder_level }}</td>
+                <td>{{ "%.2f"|format(medication.unit_price) }}</td>
+                <td>
+                    {% if medication.expiry_date %}
+                        {{ medication.expiry_date.strftime('%d %b %Y') }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+                <td>
+                    {% if medication.expiry_date and medication.expiry_date < today %}
+                        <span class="status-label status-inactive">Expired</span>
+                    {% elif medication.stock_quantity == 0 %}
+                        <span class="status-label status-inactive">Out of stock</span>
+                    {% elif medication.stock_quantity <= medication.reorder_level %}
+                        <span class="status-label status-inactive">Low stock</span>
+                    {% else %}
+                        <span class="status-label status-active">In stock</span>
+                    {% endif %}
+                </td>
+            </tr>
+
+            {% else %}
+            <tr>
+                <td colspan="8" class="empty-state">
+                    No medications have been added yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

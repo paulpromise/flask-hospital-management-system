@@ -1,0 +1,103 @@
+
+{% extends "base.html" %}
+
+{% block title %}Appointments | Hospital HMS{% endblock %}
+{% block page_heading %}Appointments{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>Appointment Management</h2>
+        <p>View scheduled visits and manage appointment statuses.</p>
+    </div>
+    <a class="button button-primary" href="{{ url_for('add_appointment') }}">
+        + Schedule Appointment
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+<div class="panel">
+    <div class="panel-heading">
+        <div>
+            <h3>All Appointments</h3>
+            <p>{{ appointments|length }} appointment(s)</p>
+        </div>
+    </div>
+
+    {% if appointments %}
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Date & Time</th>
+                    <th>Reason</th>
+                    <th>Status</th>
+                    <th>Update Status</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for appointment in appointments %}
+                <tr>
+                    <td>#{{ appointment.id }}</td>
+                    <td>
+                        {{ appointment.patient.first_name }}
+                        {{ appointment.patient.last_name }}
+                    </td>
+                    <td>
+                        Dr. {{ appointment.doctor.first_name }}
+                        {{ appointment.doctor.last_name }}
+                    </td>
+                    <td>{{ appointment.appointment_at.strftime('%d %b %Y, %H:%M') }}</td>
+                    <td>{{ appointment.reason or '—' }}</td>
+                    <td>
+                        <span class="status-label
+                            {% if appointment.status == 'completed' %}status-active
+                            {% elif appointment.status == 'cancelled' or appointment.status == 'no_show' %}status-inactive
+                            {% else %}status-scheduled{% endif %}">
+                            {{ appointment.status.replace('_', ' ')|title }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if appointment.status == 'scheduled' %}
+                        <form method="POST"
+                              action="{{ url_for('update_appointment_status', appointment_id=appointment.id) }}"
+                              class="inline-form">
+                            <select name="status" aria-label="New appointment status">
+                                <option value="completed">Completed</option>
+                                <option value="cancelled">Cancelled</option>
+                                <option value="no_show">No-show</option>
+                            </select>
+                            <button type="submit" class="button button-secondary">
+                                Update
+                            </button>
+                        </form>
+                        {% else %}
+                            <span class="muted-text">No action</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No appointments yet</h3>
+        <p>Schedule the first appointment to see it here.</p>
+        <a class="button button-primary" href="{{ url_for('add_appointment') }}">
+            Schedule Appointment
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

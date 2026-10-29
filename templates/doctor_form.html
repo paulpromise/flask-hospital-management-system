@@ -1,0 +1,97 @@
+
+{% extends "base.html" %}
+
+{% block title %}Add Doctor | Hospital HMS{% endblock %}
+{% block page_heading %}Add Doctor{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>New Doctor Registration</h2>
+        <p>Enter the doctor's details and assign a department.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('doctors') }}">
+        Back to Doctors
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+{% if not departments %}
+<div class="alert alert-error">
+    You need to create a department before registering a doctor.
+    <a href="{{ url_for('add_department') }}">Add a department</a>.
+</div>
+{% endif %}
+
+<div class="panel form-panel">
+    <form method="POST" action="{{ url_for('add_doctor') }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="first_name">First Name *</label>
+                <input type="text" id="first_name" name="first_name"
+                       maxlength="100" required
+                       value="{{ request.form.get('first_name', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="last_name">Last Name *</label>
+                <input type="text" id="last_name" name="last_name"
+                       maxlength="100" required
+                       value="{{ request.form.get('last_name', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="specialization">Specialization *</label>
+                <input type="text" id="specialization" name="specialization"
+                       maxlength="100" required
+                       placeholder="e.g. Cardiology"
+                       value="{{ request.form.get('specialization', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="department_id">Department *</label>
+                <select id="department_id" name="department_id" required>
+                    <option value="">Select department</option>
+                    {% for department in departments %}
+                    <option value="{{ department.id }}"
+                        {% if request.form.get('department_id', '')|string == department.id|string %}selected{% endif %}>
+                        {{ department.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number *</label>
+                <input type="tel" id="phone" name="phone"
+                       maxlength="20" required
+                       value="{{ request.form.get('phone', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email"
+                       maxlength="150"
+                       value="{{ request.form.get('email', '') }}">
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a class="button button-secondary" href="{{ url_for('doctors') }}">
+                Cancel
+            </a>
+            <button type="submit" class="button button-primary"
+                    {% if not departments %}disabled{% endif %}>
+                Save Doctor
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

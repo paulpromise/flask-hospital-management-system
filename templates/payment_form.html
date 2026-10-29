@@ -1,0 +1,129 @@
+
+{% extends "base.html" %}
+
+
+{% block content %}
+<div class="payment-page">
+<div class="page-header">
+    <div>
+        <h1>Record Payment</h1>
+        <p>Record a full or partial payment against a patient invoice.</p>
+    </div>
+
+    <a href="{{ url_for('payments') }}" class="btn btn-secondary">
+        Back to Payments
+    </a>
+</div>
+
+<div class="form-panel">
+    <form method="POST" action="{{ url_for('add_payment') }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="bill_id">Invoice / Patient *</label>
+                <select id="bill_id" name="bill_id" required>
+                    <option value="">Select an invoice</option>
+                    {% for bill in bills %}
+                    <option value="{{ bill.id }}"
+                        {% if request.form.get('bill_id') == bill.id|string %}selected{% endif %}>
+                        {{ bill.invoice_number }} —
+                        {{ bill.patient.first_name }} {{ bill.patient.last_name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="outstanding_balance">Outstanding Balance</label>
+                <input
+                    type="text"
+                    id="outstanding_balance"
+                    value="Select an invoice"
+                    readonly
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="amount">Payment Amount *</label>
+                <input
+                    type="number"
+                    id="amount"
+                    name="amount"
+                    min="0.01"
+                    step="0.01"
+                    value="{{ request.form.get('amount', '') }}"
+                    placeholder="Enter amount"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="payment_method">Payment Method *</label>
+                <select id="payment_method" name="payment_method" required>
+                    <option value="">Select payment method</option>
+                    {% for method_value, method_label in payment_methods %}
+                    <option value="{{ method_value }}"
+                        {% if request.form.get('payment_method') == method_value %}selected{% endif %}>
+                        {{ method_label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="transaction_reference">
+                    Transaction Reference
+                </label>
+                <input
+                    type="text"
+                    id="transaction_reference"
+                    name="transaction_reference"
+                    maxlength="100"
+                    value="{{ request.form.get('transaction_reference', '') }}"
+                    placeholder="Optional reference or receipt number"
+                >
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">
+                Record Payment
+            </button>
+
+            <a href="{{ url_for('payments') }}" class="btn btn-secondary">
+                Cancel
+            </a>
+        </div>
+    </form>
+</div>
+
+<script type="application/json" id="bill-balances-data">
+    {{ bill_balances | tojson }}
+</script>
+
+<script>
+    const billSelect = document.getElementById("bill_id");
+    const balanceInput = document.getElementById("outstanding_balance");
+    const amountInput = document.getElementById("amount");
+
+    const balances = JSON.parse(
+        document.getElementById("bill-balances-data").textContent
+    );
+
+    function updateOutstandingBalance() {
+        const billId = billSelect.value;
+        const balance = balances[billId];
+
+        if (billId && balance !== undefined) {
+            balanceInput.value = Number(balance).toFixed(2);
+            amountInput.max = Number(balance).toFixed(2);
+        } else {
+            balanceInput.value = "Select an invoice";
+            amountInput.removeAttribute("max");
+        }
+    }
+
+    billSelect.addEventListener("change", updateOutstandingBalance);
+    updateOutstandingBalance();
+</script>
+</div>
+{% endblock %}

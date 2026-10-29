@@ -1,0 +1,59 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Staff Management</h1>
+        <p>Manage hospital staff members and their departments.</p>
+    </div>
+
+    <a href="{{ url_for('add_staff') }}" class="button button-primary">
+        + Add Staff
+    </a>
+</div>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Staff ID</th>
+                <th>Name</th>
+                <th>Job Title</th>
+                <th>Phone</th>
+                <th>Email</th>
+                <th>Department</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for member in staff_members %}
+            <tr>
+                <td>{{ member.staff_code }}</td>
+                <td>{{ member.first_name }} {{ member.last_name }}</td>
+                <td>{{ member.job_title }}</td>
+                <td>{{ member.phone }}</td>
+                <td>{{ member.email or '-' }}</td>
+                <td>
+                    {{ member.department.name if member.department else '-' }}
+                </td>
+                <td>
+                    {% if member.is_active %}
+                        <span class="status-label status-active">Active</span>
+                    {% else %}
+                        <span class="status-label status-inactive">Inactive</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% else %}
+            <tr>
+                <td colspan="7" class="empty-state">
+                    No staff members have been registered yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

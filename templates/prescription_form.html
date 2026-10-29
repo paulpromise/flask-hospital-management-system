@@ -1,0 +1,64 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>New Prescription</h1>
+        <p>Create a prescription from an existing medical record.</p>
+    </div>
+</div>
+
+<div class="form-panel">
+    <form method="POST" action="{{ url_for('add_prescription') }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="medical_record_id">Medical Record *</label>
+
+                <select
+                    name="medical_record_id"
+                    id="medical_record_id"
+                    required
+                >
+                    <option value="">Select a medical record</option>
+
+                    {% for record in medical_records %}
+                    <option
+                        value="{{ record.id }}"
+                        {% if request.form.get('medical_record_id', '') == record.id|string %}
+                            selected
+                        {% endif %}
+                    >
+                        Record #{{ record.id }} —
+                        {{ record.patient.first_name }}
+                        {{ record.patient.last_name }} —
+                        {{ record.diagnosis }} —
+                        {{ record.consultation_at.strftime('%d %b %Y') }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="status">Status *</label>
+
+                <select name="status" id="status" required>
+                    <option value="active">Active</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('prescriptions') }}" class="button button-secondary">
+                Cancel
+            </a>
+
+            <button type="submit" class="button button-primary">
+                Create Prescription
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

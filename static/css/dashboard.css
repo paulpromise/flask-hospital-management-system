@@ -1,0 +1,204 @@
+/* Dashboard statistics grid */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 18px;
+    margin-bottom: 24px;
+}
+
+/* Statistic cards and dashboard panels */
+.stat-card,
+.panel {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 22px;
+}
+
+.stat-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.stat-label {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.stat-icon {
+    width: 36px;
+    height: 36px;
+    display: grid;
+    place-items: center;
+    border-radius: 10px;
+    font-weight: bold;
+}
+
+.stat-icon.blue {
+    background: #f5e9e2;
+    color: var(--blue);
+}
+
+.stat-icon.green {
+    background: #e7efe5;
+    color: var(--green);
+}
+
+.stat-icon.purple {
+    background: #eee7f1;
+    color: var(--purple);
+}
+
+.stat-icon.orange {
+    background: #f6e9dc;
+    color: var(--orange);
+}
+
+.stat-card h3 {
+    font-size: 30px;
+    margin: 20px 0 7px;
+}
+
+.stat-card p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+/* Dashboard content columns */
+.content-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 20px;
+}
+
+/* Panel headings */
+.panel-heading {
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--border);
+}
+
+.panel-heading h3 {
+    font-size: 16px;
+    margin: 0 0 6px;
+}
+
+/* Overview list */
+.overview-list {
+    padding-top: 10px;
+}
+
+.overview-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 13px;
+    padding: 15px 0;
+}
+
+.overview-item strong,
+.system-status strong {
+    font-size: 13px;
+}
+
+.overview-item p,
+.system-status p {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 6px 0 0;
+}
+
+.overview-marker {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    margin-top: 3px;
+}
+
+.overview-marker.blue {
+    background: var(--blue);
+}
+
+.overview-marker.green {
+    background: var(--green);
+}
+
+.overview-marker.purple {
+    background: var(--purple);
+}
+
+/* System status */
+.system-status {
+    display: flex;
+    align-items: flex-start;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--border);
+}
+
+.system-status .status-dot {
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+/* Dashboard notice */
+.notice {
+    background: #f5e9e2;
+    border-radius: 8px;
+    padding: 12px;
+    color: #773344;
+    font-size: 12px;
+    line-height: 1.6;
+    margin-top: 20px;
+}
+
+/* Visual polish for dashboard cards and headings */
+.stat-card,
+.panel {
+    box-shadow: var(--shadow-sm);
+    transition: transform 0.2s ease, box-shadow 0.2s ease,
+        border-color 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-md);
+    border-color: var(--almond-silk);
+}
+
+.topbar h1,
+.welcome-section h2,
+.panel-heading h3 {
+    color: var(--midnight-violet);
+    letter-spacing: -0.025em;
+}
+
+/* Refined statistic icon colors */
+.stat-icon.blue {
+    background: #f2e1e4;
+    color: var(--wine-plum);
+}
+
+.stat-icon.green {
+    background: #e7efe5;
+    color: #365d3b;
+}
+
+.stat-icon.purple {
+    background: #eee7f1;
+    color: var(--midnight-violet);
+}
+
+.stat-icon.orange {
+    background: #f6e9dc;
+    color: #8a512d;
+}
+
+/* Refined dashboard notice */
+.notice {
+    background: var(--linen);
+    color: var(--wine-plum);
+    border: 1px solid var(--border);
+}

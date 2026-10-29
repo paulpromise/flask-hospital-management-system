@@ -1,0 +1,96 @@
+/* Search form */
+.search-form {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    margin: 20px 0 24px;
+    padding: 16px;
+    background: var(--surface-soft);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    box-sizing: border-box;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Search input fields */
+.search-form input[type="text"],
+.search-form input[type="search"] {
+    flex: 1;
+    min-width: 0;
+    min-height: 44px;
+    padding: 0 14px;
+    font-family: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    outline: none;
+}
+
+.search-form input::placeholder {
+    color: #8b777d;
+}
+
+.search-form input:focus {
+    border-color: var(--wine-plum);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+/* Search buttons */
+.search-form .button {
+    min-height: 44px;
+    padding: 0 20px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    cursor: pointer;
+    box-sizing: border-box;
+}
+
+.search-form .button-primary {
+    background: var(--wine-plum);
+    color: var(--white);
+    border: 1px solid var(--wine-plum);
+}
+
+.search-form .button-primary:hover {
+    background: #5e2736;
+    border-color: #5e2736;
+}
+
+.search-form .button:not(.button-primary) {
+    background: var(--white);
+    color: var(--coffee-bean);
+    border: 1px solid var(--border);
+}
+
+.search-form .button:not(.button-primary):hover {
+    background: var(--surface-hover);
+}
+
+/* Responsive search form */
+@media (max-width: 600px) {
+    .search-form {
+        flex-wrap: wrap;
+        gap: 10px;
+        padding: 12px;
+    }
+
+    .search-form input[type="text"],
+    .search-form input[type="search"] {
+        flex-basis: 100%;
+        width: 100%;
+    }
+
+    .search-form .button {
+        flex: 1;
+    }
+}

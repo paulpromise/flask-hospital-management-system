@@ -1,0 +1,84 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Prescriptions</h1>
+        <p>Manage patient prescriptions and medication instructions.</p>
+    </div>
+
+    <a href="{{ url_for('add_prescription') }}"
+       class="button button-primary">
+        + New Prescription
+    </a>
+</div>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Patient</th>
+                <th>Doctor</th>
+                <th>Diagnosis</th>
+                <th>Medication Items</th>
+                <th>Date Created</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for prescription in prescriptions %}
+            <tr>
+                <td>
+                    <a
+                        href="{{ url_for(
+                            'prescription_detail',
+                            prescription_id=prescription.id
+                        ) }}"
+                    >
+                        #{{ prescription.id }}
+                    </a>
+                </td>
+
+                <td>
+                    {{ prescription.medical_record.patient.first_name }}
+                    {{ prescription.medical_record.patient.last_name }}
+                </td>
+
+                <td>
+                    {{ prescription.prescribed_by.first_name }}
+                    {{ prescription.prescribed_by.last_name }}
+                </td>
+
+                <td>
+                    {{ prescription.medical_record.diagnosis }}
+                </td>
+
+                <td>
+                    {{ prescription.items|length }}
+                </td>
+
+                <td>
+                    {{ prescription.created_at.strftime('%d %b %Y') }}
+                </td>
+
+                <td>
+                    <span class="status-label status-{{ prescription.status }}">
+                        {{ prescription.status.replace('_', ' ')|title }}
+                    </span>
+                </td>
+            </tr>
+
+            {% else %}
+            <tr>
+                <td colspan="7" class="empty-state">
+                    No prescriptions have been created yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

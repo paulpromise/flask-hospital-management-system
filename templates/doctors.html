@@ -1,0 +1,117 @@
+
+{% extends "base.html" %}
+
+{% block title %}Doctors - Hospital Management System{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Doctors</h1>
+        <p>Manage and view hospital doctors.</p>
+    </div>
+
+    <a href="{{ url_for('add_doctor') }}" class="button button-primary">
+        + Add Doctor
+    </a>
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <div>
+            <h2>Doctor Directory</h2>
+            <p>Search and manage registered doctors.</p>
+        </div>
+    </div>
+
+    <form method="GET"
+          action="{{ url_for('doctors') }}"
+          class="search-form">
+
+        <input
+            type="search"
+            name="q"
+            placeholder="Search by doctor ID, name, specialization, phone, email, or department"
+            value="{{ search }}"
+            aria-label="Search doctors"
+        >
+
+        <button type="submit" class="button button-primary">Search</button>
+
+        {% if search %}
+            <a href="{{ url_for('doctors') }}" class="btn btn-secondary">
+                Clear
+            </a>
+        {% endif %}
+    </form>
+
+    {% if search %}
+        <p class="search-results">
+            Search results for: <strong>{{ search }}</strong>
+            — {{ doctors|length }} doctor(s) found.
+        </p>
+    {% endif %}
+
+    <div class="table-responsive">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Doctor ID</th>
+                    <th>Full Name</th>
+                    <th>Specialization</th>
+                    <th>Department</th>
+                    <th>Phone</th>
+                    <th>Email</th>
+                    <th>Status</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% for doctor in doctors %}
+                    <tr>
+                        <td>{{ doctor.doctor_code }}</td>
+
+                        <td>
+                            {{ doctor.first_name }} {{ doctor.last_name }}
+                        </td>
+
+                        <td>
+                            {{ doctor.specialization or "—" }}
+                        </td>
+
+                        <td>
+                            {{ doctor.department.name if doctor.department else "—" }}
+                        </td>
+
+                        <td>{{ doctor.phone or "—" }}</td>
+
+                        <td>{{ doctor.email or "—" }}</td>
+
+                        <td>
+                            {% if doctor.is_active %}
+                                <span class="status-badge status-active">
+                                    Active
+                                </span>
+                            {% else %}
+                                <span class="status-badge status-inactive">
+                                    Inactive
+                                </span>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                {% else %}
+                    <tr>
+                        <td colspan="7" class="empty-state">
+                            {% if search %}
+                                No doctors found matching "{{ search }}".
+                            {% else %}
+                                No doctors have been registered yet.
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

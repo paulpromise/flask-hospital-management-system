@@ -1,0 +1,87 @@
+ {% extends "base.html" %}
+
+{% block title %}Patients | Hospital HMS{% endblock %}
+{% block page_heading %}Patients{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>Patient Management</h2>
+        <p>View and manage registered patient records.</p>
+    </div>
+    <a class="button button-primary" href="{{ url_for('add_patient') }}">
+        + Register Patient
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+<div class="panel">
+    <div class="panel-heading">
+        <div>
+            <h3>Registered Patients</h3>
+            <p>{{ patients|length }} patient record(s)</p>
+        </div>
+    </div>
+
+    <form method="GET" action="{{ url_for('patients') }}" class="search-form">
+        <input
+            type="text"
+            name="search"
+            placeholder="Search by patient ID, name, or phone"
+            value="{{ request.args.get('search', '') }}"
+        >
+        <button type="submit" class="button button-primary">Search</button>
+        {% if request.args.get('search') %}
+            <a href="{{ url_for('patients') }}" class="button">Clear</a>
+        {% endif %}
+    </form>
+
+    {% if patients %}
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Patient ID</th>
+                    <th>Patient Name</th>
+                    <th>Date of Birth</th>
+                    <th>Gender</th>
+                    <th>Phone</th>
+                    <th>Address</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for patient in patients %}
+                <tr>
+                    <td><strong>{{ patient.patient_code }}</strong></td>
+                    <td>
+                        <strong>{{ patient.first_name }} {{ patient.last_name }}</strong>
+                    </td>
+                    <td>
+                        {{ patient.date_of_birth.strftime('%d %b %Y') if patient.date_of_birth else '—' }}
+                    </td>
+                    <td>{{ patient.gender or '—' }}</td>
+                    <td>{{ patient.phone or '—' }}</td>
+                    <td>{{ patient.address or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No patients found</h3>
+        <p>Register a new patient or try a different search.</p>
+        <a class="button button-primary" href="{{ url_for('add_patient') }}">
+            Register Patient
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

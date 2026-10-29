@@ -1,0 +1,130 @@
+
+{% extends "base.html" %}
+
+{% block title %}Dashboard | Hospital HMS{% endblock %}
+{% block page_heading %}Dashboard{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>Welcome to the Hospital Dashboard</h2>
+        <p>Manage hospital operations from one central location.</p>
+    </div>
+    <div class="date-label">Hospital Administration</div>
+</div>
+
+<div class="stats-grid">
+
+    <!-- Total Patients -->
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Total Patients</span>
+            <span class="stat-icon blue">P</span>
+        </div>
+        <h3>{{ total_patients }}</h3>
+        <p>Registered patients</p>
+    </div>
+
+    <!-- Total Doctors -->
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Total Doctors</span>
+            <span class="stat-icon green">D</span>
+        </div>
+        <h3>{{ total_doctors }}</h3>
+        <p>Registered doctors</p>
+    </div>
+
+    <!-- Scheduled Appointments -->
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Appointments</span>
+            <span class="stat-icon purple">A</span>
+        </div>
+        <h3>{{ scheduled_appointments }}</h3>
+        <p>Scheduled appointments</p>
+    </div>
+
+    <!-- Total Departments -->
+    <div class="stat-card">
+        <div class="stat-top">
+            <span class="stat-label">Departments</span>
+            <span class="stat-icon orange">D</span>
+        </div>
+        <h3>{{ total_departments }}</h3>
+        <p>Hospital departments</p>
+    </div>
+
+</div>
+
+<div class="content-grid">
+
+    <!-- Hospital Overview -->
+    <div class="panel">
+        <div class="panel-heading">
+            <div>
+                <h3>Hospital Overview</h3>
+                <p>Your central workspace</p>
+            </div>
+        </div>
+
+        <div class="overview-list">
+
+            <div class="overview-item">
+                <span class="overview-marker blue"></span>
+                <div>
+                    <strong>Patient Management</strong>
+                    <p>Register and maintain patient information.</p>
+                </div>
+            </div>
+
+            <div class="overview-item">
+                <span class="overview-marker green"></span>
+                <div>
+                    <strong>Clinical Services</strong>
+                    <p>Manage doctors, appointments and medical records.</p>
+                </div>
+            </div>
+
+            <div class="overview-item">
+                <span class="overview-marker purple"></span>
+                <div>
+                    <strong>Hospital Administration</strong>
+                    <p>Manage staff, prescriptions, billing and payments.</p>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <!-- System Status -->
+    <div class="panel">
+        <div class="panel-heading">
+            <div>
+                <h3>System Status</h3>
+                <p>Application information</p>
+            </div>
+        </div>
+
+        <div class="system-status">
+            <span class="status-dot"></span>
+            <div>
+                <strong>Application running</strong>
+                <p>Flask is serving the dashboard.</p>
+            </div>
+        </div>
+
+        <div class="system-status">
+            <span class="status-dot"></span>
+            <div>
+                <strong>Database configured</strong>
+                <p>MySQL database: hospitaldb</p>
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,81 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Billing & Payments</h1>
+        <p>Manage invoices, patient bills, and outstanding balances.</p>
+    </div>
+
+    <a href="{{ url_for('add_bill') }}" class="button button-primary">
+        + Create Bill
+    </a>
+</div>
+
+<div class="table-wrapper">
+    <table class="data-table">
+        <thead>
+            <tr>
+                <th>Invoice Number</th>
+                <th>Patient</th>
+                <th>Appointment</th>
+                <th>Total Amount</th>
+                <th>Amount Paid</th>
+                <th>Balance</th>
+                <th>Due Date</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            {% for bill in bills %}
+            {% set amount_paid = bill.payments|sum(attribute='amount') %}
+            {% set balance = bill.total_amount - amount_paid %}
+
+            <tr>
+                <td>{{ bill.invoice_number }}</td>
+
+                <td>
+                    {{ bill.patient.first_name }}
+                    {{ bill.patient.last_name }}
+                </td>
+
+                <td>
+                    {% if bill.appointment %}
+                        #{{ bill.appointment.id }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td>{{ "%.2f"|format(bill.total_amount) }}</td>
+                <td>{{ "%.2f"|format(amount_paid) }}</td>
+                <td>{{ "%.2f"|format(balance) }}</td>
+
+                <td>
+                    {% if bill.due_date %}
+                        {{ bill.due_date.strftime('%d %b %Y') }}
+                    {% else %}
+                        -
+                    {% endif %}
+                </td>
+
+                <td>
+                    <span class="status-label status-{{ bill.status }}">
+                        {{ bill.status.replace('_', ' ')|title }}
+                    </span>
+                </td>
+            </tr>
+
+            {% else %}
+            <tr>
+                <td colspan="8" class="empty-state">
+                    No bills have been created yet.
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

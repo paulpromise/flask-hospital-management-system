@@ -1,0 +1,69 @@
+
+{% extends "base.html" %}
+
+{% block title %}Departments | Hospital HMS{% endblock %}
+{% block page_heading %}Departments{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>Department Management</h2>
+        <p>Manage hospital departments and their descriptions.</p>
+    </div>
+    <a class="button button-primary"
+       href="{{ url_for('add_department') }}">
+        + Add Department
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+<div class="panel">
+    <div class="panel-heading">
+        <div>
+            <h3>Hospital Departments</h3>
+            <p>{{ departments|length }} department(s) registered</p>
+        </div>
+    </div>
+
+    {% if departments %}
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Department</th>
+                    <th>Description</th>
+                    <th>Doctors</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for department in departments %}
+                <tr>
+                    <td>#{{ department.id }}</td>
+                    <td><strong>{{ department.name }}</strong></td>
+                    <td>{{ department.description or '—' }}</td>
+                    <td>{{ department.doctors|length }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No departments yet</h3>
+        <p>Add your first department to get started.</p>
+        <a class="button button-primary"
+           href="{{ url_for('add_department') }}">
+            Add First Department
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

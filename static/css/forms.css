@@ -1,0 +1,82 @@
+/* Form panel */
+.form-panel {
+    max-width: 900px;
+    border-radius: var(--radius-lg);
+}
+
+/* Form grid */
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 22px;
+}
+
+/* Form groups */
+.form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.form-group label {
+    font-weight: bold;
+    font-size: 13px;
+}
+
+/* Form fields */
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    min-height: 42px;
+    padding: 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: white;
+    color: var(--text);
+    font: inherit;
+}
+
+.form-group textarea {
+    resize: vertical;
+}
+
+/* Focus states */
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: 2px solid var(--almond-silk);
+    border-color: var(--wine-plum);
+}
+
+/* Full-width form fields */
+.full-width {
+    grid-column: 1 / -1;
+}
+
+/* Form actions */
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+    margin-top: 28px;
+    padding-top: 20px;
+    border-top: 1px solid var(--border);
+}
+
+/* Inline forms */
+.inline-form {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.inline-form select {
+    min-height: 42px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: white;
+    color: var(--text);
+    font: inherit;
+}

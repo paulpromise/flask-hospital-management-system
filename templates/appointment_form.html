@@ -1,0 +1,99 @@
+
+{% extends "base.html" %}
+
+{% block title %}Schedule Appointment | Hospital HMS{% endblock %}
+{% block page_heading %}Schedule Appointment{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>New Appointment</h2>
+        <p>Select a patient, doctor, and appointment time.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('appointments') }}">
+        Back to Appointments
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+{% if not patients %}
+<div class="alert alert-error">
+    Register a patient before scheduling an appointment.
+    <a href="{{ url_for('add_patient') }}">Register patient</a>.
+</div>
+{% endif %}
+
+{% if not doctors %}
+<div class="alert alert-error">
+    Register an active doctor before scheduling an appointment.
+    <a href="{{ url_for('add_doctor') }}">Register doctor</a>.
+</div>
+{% endif %}
+
+<div class="panel form-panel">
+    <form method="POST" action="{{ url_for('add_appointment') }}">
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label for="patient_id">Patient *</label>
+                <select id="patient_id" name="patient_id" required>
+                    <option value="">Select patient</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}"
+                        {% if request.form.get('patient_id', '')|string == patient.id|string %}selected{% endif %}>
+                        {{ patient.first_name }} {{ patient.last_name }}
+                        (Patient #{{ patient.id }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="doctor_id">Doctor *</label>
+                <select id="doctor_id" name="doctor_id" required>
+                    <option value="">Select doctor</option>
+                    {% for doctor in doctors %}
+                    <option value="{{ doctor.id }}"
+                        {% if request.form.get('doctor_id', '')|string == doctor.id|string %}selected{% endif %}>
+                        Dr. {{ doctor.first_name }} {{ doctor.last_name }}
+                        — {{ doctor.specialization }} ({{ doctor.department.name }})
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group full-width">
+                <label for="appointment_at">Appointment Date and Time *</label>
+                <input type="datetime-local"
+                       id="appointment_at"
+                       name="appointment_at"
+                       required
+                       value="{{ request.form.get('appointment_at', '') }}">
+            </div>
+
+            <div class="form-group full-width">
+                <label for="reason">Reason for Visit</label>
+                <textarea id="reason" name="reason" rows="3"
+                          maxlength="255"
+                          placeholder="Brief reason for the appointment">{{ request.form.get('reason', '') }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a class="button button-secondary" href="{{ url_for('appointments') }}">
+                Cancel
+            </a>
+            <button type="submit" class="button button-primary"
+                    {% if not patients or not doctors %}disabled{% endif %}>
+                Schedule Appointment
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

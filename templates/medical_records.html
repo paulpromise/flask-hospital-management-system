@@ -1,0 +1,83 @@
+
+{% extends "base.html" %}
+
+{% block title %}Medical Records | Hospital HMS{% endblock %}
+{% block page_heading %}Medical Records{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>Medical Records</h2>
+        <p>Review documented consultations and diagnoses.</p>
+    </div>
+    <a class="button button-primary"
+       href="{{ url_for('add_medical_record') }}">
+        + Add Medical Record
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+<div class="panel">
+    <div class="panel-heading">
+        <div>
+            <h3>Consultation History</h3>
+            <p>{{ records|length }} record(s)</p>
+        </div>
+    </div>
+
+    {% if records %}
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Patient</th>
+                    <th>Doctor</th>
+                    <th>Consultation Date</th>
+                    <th>Diagnosis</th>
+                    <th>Symptoms</th>
+                    <th>Treatment Notes</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in records %}
+                <tr>
+                    <td>#{{ record.id }}</td>
+                    <td>
+                        {{ record.patient.first_name }}
+                        {{ record.patient.last_name }}
+                    </td>
+                    <td>
+                        Dr. {{ record.doctor.first_name }}
+                        {{ record.doctor.last_name }}
+                    </td>
+                    <td>
+                        {{ record.consultation_at.strftime('%d %b %Y, %H:%M') }}
+                    </td>
+                    <td>{{ record.diagnosis }}</td>
+                    <td>{{ record.symptoms or '—' }}</td>
+                    <td>{{ record.treatment_notes or '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <h3>No medical records yet</h3>
+        <p>Document a consultation to create the first record.</p>
+        <a class="button button-primary"
+           href="{{ url_for('add_medical_record') }}">
+            Add Medical Record
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% endblock %}

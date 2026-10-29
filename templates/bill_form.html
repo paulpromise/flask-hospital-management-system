@@ -1,0 +1,237 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Create Bill</h1>
+        <p>Create an invoice using services and medications.</p>
+    </div>
+</div>
+
+<div class="form-panel">
+    <form method="POST" action="{{ url_for('add_bill') }}">
+
+        <!-- Patient and appointment details -->
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="patient_id">Patient *</label>
+                <select id="patient_id" name="patient_id" required>
+                    <option value="">Select patient</option>
+                    {% for patient in patients %}
+                    <option value="{{ patient.id }}"
+                        {% if request.form.get('patient_id', '') == patient.id|string %}
+                            selected
+                        {% endif %}>
+                        {{ patient.first_name }} {{ patient.last_name }}
+                        — {{ patient.patient_code }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="appointment_id">Appointment (Optional)</label>
+                <select id="appointment_id" name="appointment_id">
+                    <option value="">No appointment linked</option>
+                    {% for appointment in appointments %}
+                    <option value="{{ appointment.id }}"
+                        {% if request.form.get('appointment_id', '') == appointment.id|string %}
+                            selected
+                        {% endif %}>
+                        #{{ appointment.id }} —
+                        {{ appointment.patient.first_name }}
+                        {{ appointment.patient.last_name }} —
+                        {{ appointment.appointment_at.strftime('%d %b %Y %H:%M') }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="due_date">Due Date (Optional)</label>
+                <input
+                    type="date"
+                    id="due_date"
+                    name="due_date"
+                    value="{{ request.form.get('due_date', '') }}"
+                >
+            </div>
+        </div>
+
+        <hr>
+
+        <!-- Services -->
+        <h2>Services</h2>
+        <p>Select consultations, laboratory tests, or other services.</p>
+
+        <div id="services-container">
+            <div class="form-grid bill-item-row">
+                <div class="form-group">
+                    <label>Service</label>
+                    <select name="service_id">
+                        <option value="">Select service</option>
+                        {% for service in services %}
+                        <option value="{{ service.id }}"
+                            {% if request.form.getlist('service_id')|length > 0
+                                  and request.form.getlist('service_id')[0] == service.id|string %}
+                                selected
+                            {% endif %}>
+                            {{ service.name }} —
+                            {{ "%.2f"|format(service.unit_price) }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input
+                        type="number"
+                        name="service_quantity"
+                        min="1"
+                        step="1"
+                        placeholder="Enter quantity"
+                        value="{{ request.form.getlist('service_quantity')[0] if request.form.getlist('service_quantity')|length > 0 else '' }}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Action</label>
+                    <button type="button"
+                            class="button button-secondary remove-item">
+                        Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button type="button"
+                id="add-service"
+                class="button button-secondary">
+            + Add Another Service
+        </button>
+
+        <hr>
+
+        <!-- Medications -->
+        <h2>Medications</h2>
+        <p>Select medications to include in the invoice.</p>
+
+        <div id="medications-container">
+            <div class="form-grid bill-item-row">
+                <div class="form-group">
+                    <label>Medication</label>
+                    <select name="medication_id">
+                        <option value="">Select medication</option>
+                        {% for medication in medications %}
+                        <option value="{{ medication.id }}"
+                            {% if request.form.getlist('medication_id')|length > 0
+                                  and request.form.getlist('medication_id')[0] == medication.id|string %}
+                                selected
+                            {% endif %}>
+                            {{ medication.name }}
+                            {% if medication.strength %}
+                                ({{ medication.strength }})
+                            {% endif %}
+                            — {{ "%.2f"|format(medication.unit_price) }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Quantity</label>
+                    <input
+                        type="number"
+                        name="medication_quantity"
+                        min="1"
+                        step="1"
+                        placeholder="Enter quantity"
+                        value="{{ request.form.getlist('medication_quantity')[0] if request.form.getlist('medication_quantity')|length > 0 else '' }}"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label>Action</label>
+                    <button type="button"
+                            class="button button-secondary remove-item">
+                        Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <button type="button"
+                id="add-medication"
+                class="button button-secondary">
+            + Add Another Medication
+        </button>
+
+        <hr>
+
+        <!-- Form actions -->
+        <div class="form-actions">
+            <a href="{{ url_for('billing') }}"
+               class="button button-secondary">
+                Cancel
+            </a>
+
+            <button type="submit" class="button button-primary">
+                Create Bill
+            </button>
+        </div>
+
+    </form>
+</div>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function setupItemRows(containerId, addButtonId) {
+        const container = document.getElementById(containerId);
+        const addButton = document.getElementById(addButtonId);
+
+        addButton.addEventListener("click", function () {
+            const firstRow = container.querySelector(".bill-item-row");
+            const newRow = firstRow.cloneNode(true);
+
+            newRow.querySelectorAll("select").forEach(function (select) {
+                select.selectedIndex = 0;
+            });
+
+            newRow.querySelectorAll("input").forEach(function (input) {
+                input.value = "";
+            });
+
+            container.appendChild(newRow);
+        });
+
+        container.addEventListener("click", function (event) {
+            const removeButton = event.target.closest(".remove-item");
+
+            if (!removeButton) {
+                return;
+            }
+
+            const rows = container.querySelectorAll(".bill-item-row");
+            const currentRow = removeButton.closest(".bill-item-row");
+
+            if (rows.length > 1) {
+                currentRow.remove();
+            } else {
+                currentRow.querySelectorAll("select").forEach(function (select) {
+                    select.selectedIndex = 0;
+                });
+
+                currentRow.querySelectorAll("input").forEach(function (input) {
+                    input.value = "";
+                });
+            }
+        });
+    }
+
+    setupItemRows("services-container", "add-service");
+    setupItemRows("medications-container", "add-medication");
+});
+</script>
+{% endblock %}

@@ -1,0 +1,87 @@
+
+{% extends "base.html" %}
+
+{% block title %}Register Patient | Hospital HMS{% endblock %}
+{% block page_heading %}Register Patient{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>New Patient Registration</h2>
+        <p>Enter the patient's details below.</p>
+    </div>
+    <a class="button button-secondary" href="{{ url_for('patients') }}">
+        Back to Patients
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+<div class="panel form-panel">
+    <form method="POST" action="{{ url_for('add_patient') }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="first_name">First Name *</label>
+                <input type="text" id="first_name" name="first_name"
+                       maxlength="100" required
+                       value="{{ request.form.get('first_name', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="last_name">Last Name *</label>
+                <input type="text" id="last_name" name="last_name"
+                       maxlength="100" required
+                       value="{{ request.form.get('last_name', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="date_of_birth">Date of Birth *</label>
+                <input type="date" id="date_of_birth" name="date_of_birth"
+                       required max="{{ today or '' }}"
+                       value="{{ request.form.get('date_of_birth', '') }}">
+            </div>
+
+            <div class="form-group">
+                <label for="gender">Gender *</label>
+                <select id="gender" name="gender" required>
+                    <option value="">Select gender</option>
+                    {% for option in ['Male', 'Female', 'Other'] %}
+                    <option value="{{ option }}"
+                        {% if request.form.get('gender') == option %}selected{% endif %}>
+                        {{ option }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number *</label>
+                <input type="tel" id="phone" name="phone"
+                       maxlength="20" required
+                       value="{{ request.form.get('phone', '') }}">
+            </div>
+
+            <div class="form-group full-width">
+                <label for="address">Address</label>
+                <textarea id="address" name="address" rows="3"
+                          maxlength="255">{{ request.form.get('address', '') }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a class="button button-secondary" href="{{ url_for('patients') }}">
+                Cancel
+            </a>
+            <button type="submit" class="button button-primary">
+                Save Patient
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}

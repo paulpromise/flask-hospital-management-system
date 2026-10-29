@@ -1,0 +1,77 @@
+
+{% extends "base.html" %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h1>Add Staff Member</h1>
+        <p>Enter the staff member's information below.</p>
+    </div>
+</div>
+
+<div class="form-panel">
+    <form method="POST" action="{{ url_for('add_staff') }}">
+        <div class="form-grid">
+            <div class="form-group">
+                <label for="first_name">First Name *</label>
+                <input type="text" id="first_name" name="first_name"
+                       value="{{ request.form.get('first_name', '') }}"
+                       maxlength="100" required>
+            </div>
+
+            <div class="form-group">
+                <label for="last_name">Last Name *</label>
+                <input type="text" id="last_name" name="last_name"
+                       value="{{ request.form.get('last_name', '') }}"
+                       maxlength="100" required>
+            </div>
+
+            <div class="form-group">
+                <label for="job_title">Job Title *</label>
+                <input type="text" id="job_title" name="job_title"
+                       value="{{ request.form.get('job_title', '') }}"
+                       maxlength="100" required>
+            </div>
+
+            <div class="form-group">
+                <label for="phone">Phone Number *</label>
+                <input type="tel" id="phone" name="phone"
+                       value="{{ request.form.get('phone', '') }}"
+                       maxlength="20" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email Address</label>
+                <input type="email" id="email" name="email"
+                       value="{{ request.form.get('email', '') }}"
+                       maxlength="150">
+            </div>
+
+            <div class="form-group">
+                <label for="department_id">Department</label>
+                <select id="department_id" name="department_id">
+                    <option value="">No department assigned</option>
+                    {% for department in departments %}
+                    <option value="{{ department.id }}"
+                        {% if request.form.get('department_id', '') == department.id|string %}
+                            selected
+                        {% endif %}>
+                        {{ department.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a href="{{ url_for('staff') }}" class="button button-secondary">
+                Cancel
+            </a>
+
+            <button type="submit" class="button button-primary">
+                Register Staff
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

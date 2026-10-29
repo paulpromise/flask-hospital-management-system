@@ -1,0 +1,66 @@
+
+{% extends "base.html" %}
+
+{% block title %}Add Department | Hospital HMS{% endblock %}
+{% block page_heading %}Add Department{% endblock %}
+
+{% block content %}
+
+<div class="welcome-section">
+    <div>
+        <h2>New Department</h2>
+        <p>Enter the department information below.</p>
+    </div>
+    <a class="button button-secondary"
+       href="{{ url_for('departments') }}">
+        Back to Departments
+    </a>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+    {% endfor %}
+{% endwith %}
+
+<div class="panel form-panel">
+    <form method="POST" action="{{ url_for('add_department') }}">
+        <div class="form-grid">
+            <div class="form-group full-width">
+                <label for="name">Department Name *</label>
+                <input
+                    type="text"
+                    id="name"
+                    name="name"
+                    maxlength="100"
+                    required
+                    value="{{ request.form.get('name', '') }}"
+                    placeholder="e.g. Cardiology"
+                >
+            </div>
+
+            <div class="form-group full-width">
+                <label for="description">Description</label>
+                <textarea
+                    id="description"
+                    name="description"
+                    rows="4"
+                    maxlength="255"
+                    placeholder="Briefly describe the department"
+                >{{ request.form.get('description', '') }}</textarea>
+            </div>
+        </div>
+
+        <div class="form-actions">
+            <a class="button button-secondary"
+               href="{{ url_for('departments') }}">
+                Cancel
+            </a>
+            <button type="submit" class="button button-primary">
+                Save Department
+            </button>
+        </div>
+    </form>
+</div>
+
+{% endblock %}
