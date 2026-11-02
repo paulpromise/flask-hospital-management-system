@@ -62,6 +62,7 @@
                     <th>Phone</th>
                     <th>Email</th>
                     <th>Status</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
 
@@ -97,11 +98,16 @@
                                 </span>
                             {% endif %}
                         </td>
+                        <td>
+                            {% if current_user.is_authenticated and current_user.role in ['admin', 'receptionist'] %}
+                            <a href="{{ url_for('edit_doctor', doctor_id=doctor.id) }}" class="button button-secondary">Edit</a>
+                            {% endif %}
+                        </td>
                     </tr>
 
                 {% else %}
                     <tr>
-                        <td colspan="7" class="empty-state">
+                        <td colspan="8" class="empty-state">
                             {% if search %}
                                 No doctors found matching "{{ search }}".
                             {% else %}

@@ -1,0 +1,109 @@
+{% extends "base.html" %}
+
+{% block title %}Edit {{ user.username }} | Hospital HMS{% endblock %}
+{% block page_heading %}Edit User{% endblock %}
+
+{% block content %}
+<div class="user-edit-page">
+    <div class="user-edit-header">
+        <div>
+            <p class="user-page-eyebrow">User management / Account</p>
+            <div class="user-edit-title">
+                <span class="user-edit-avatar">{{ user.username[:1]|upper }}</span>
+                <div>
+                    <h2>{{ user.username }}</h2>
+                    <p>Update identity, role, login access, or password.</p>
+                </div>
+            </div>
+        </div>
+        <a href="{{ url_for('users') }}" class="button button-secondary">Back to users</a>
+    </div>
+
+    <div class="user-edit-layout">
+        <main>
+            <section class="user-edit-section">
+                <div class="user-edit-section-heading">
+                    <div>
+                        <h3>Account information</h3>
+                        <p>These details identify the person when they sign in.</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ url_for('edit_user', user_id=user.id) }}" class="user-edit-form">
+                    <div class="user-form-field">
+                        <label for="email">Hospital email *</label>
+                        <input type="email" id="email" name="email" value="{{ user.email }}" maxlength="150" required>
+                        <small>Email is used to sign in.</small>
+                    </div>
+                    <div class="user-form-field">
+                        <label for="role">Role *</label>
+                        <select id="role" name="role" required>
+                            {% for role in roles %}
+                            <option value="{{ role }}" {% if role == user.role %}selected{% endif %}>{{ role|title }}</option>
+                            {% endfor %}
+                        </select>
+                        <small>Changing the role changes permissions immediately.</small>
+                    </div>
+                    <div class="user-edit-form-actions">
+                        <a href="{{ url_for('users') }}" class="button button-secondary">Cancel</a>
+                        <button type="submit" class="button button-primary">Save changes</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="user-edit-section">
+                <div class="user-edit-section-heading">
+                    <div>
+                        <h3>Set a new password</h3>
+                        <p>The existing password cannot be viewed. Setting a new one replaces it.</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ url_for('set_user_password', user_id=user.id) }}" class="user-password-form">
+                    <div class="user-form-field">
+                        <label for="password">New password *</label>
+                        <input type="password" id="password" name="password" minlength="8" autocomplete="new-password" required>
+                        <small>Use at least 8 characters.</small>
+                    </div>
+                    <button type="submit" class="button button-secondary">Update password</button>
+                </form>
+            </section>
+        </main>
+
+        <aside class="user-edit-sidebar">
+            <section class="user-edit-section">
+                <div class="user-edit-section-heading">
+                    <div>
+                        <h3>Login access</h3>
+                        <p>Control whether this account can sign in.</p>
+                    </div>
+                </div>
+                <div class="user-access-status">
+                    <span class="status-label {{ 'status-active' if user.is_active else 'status-inactive' }}">
+                        <span class="status-dot-inline"></span>
+                        {{ 'Active' if user.is_active else 'Disabled' }}
+                    </span>
+                    {% if user.is_active %}
+                    <p>This user can log in with their hospital email.</p>
+                    {% else %}
+                    <p>This user is blocked from signing in.</p>
+                    {% endif %}
+                </div>
+                {% if user.id != current_user.id %}
+                <form method="POST" action="{{ url_for('toggle_user_status', user_id=user.id) }}">
+                    <button type="submit" class="button {{ 'button-danger' if user.is_active else 'button-primary' }} user-full-button">
+                        {{ 'Disable login' if user.is_active else 'Enable login' }}
+                    </button>
+                </form>
+                {% else %}
+                <p class="user-help-text">You cannot disable your own administrator account.</p>
+                {% endif %}
+            </section>
+            <section class="user-edit-meta">
+                <span>Account created</span>
+                <strong>{{ user.created_at.strftime('%d %b %Y') if user.created_at else 'Unknown' }}</strong>
+                <span>Current role</span>
+                <strong>{{ user.role|title }}</strong>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

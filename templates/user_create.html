@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}New User | Hospital HMS{% endblock %}
+{% block page_heading %}New User{% endblock %}
+
+{% block content %}
+<div class="user-edit-page">
+    <div class="user-edit-header">
+        <div>
+            <p class="user-page-eyebrow">User management / New account</p>
+            <div class="user-edit-title">
+                <span class="user-edit-avatar">+</span>
+                <div>
+                    <h2>Create user account</h2>
+                    <p>Add a login account that is not linked to an existing personnel record.</p>
+                </div>
+            </div>
+        </div>
+        <a href="{{ url_for('users') }}" class="button button-secondary">Back to users</a>
+    </div>
+
+    <div class="user-create-page-layout">
+        <section class="user-edit-section">
+            <div class="user-edit-section-heading">
+                <div>
+                    <h3>Account information</h3>
+                    <p>Email is required because staff sign in with their hospital email.</p>
+                </div>
+            </div>
+            <form method="POST" action="{{ url_for('add_user') }}" class="user-edit-form">
+                <div class="user-form-field">
+                    <label for="email">Hospital email *</label>
+                    <input type="email" id="email" name="email" maxlength="150" autocomplete="email" required>
+                </div>
+                <div class="user-form-field">
+                    <label for="role">Role *</label>
+                    <select id="role" name="role" required>
+                        <option value="">Select role</option>
+                        {% for role in roles %}
+                        <option value="{{ role }}">{{ role|title }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="user-form-field">
+                    <label for="password">Initial password *</label>
+                    <input type="password" id="password" name="password" minlength="8" autocomplete="new-password" required>
+                    <small>The password cannot be viewed after account creation.</small>
+                </div>
+                <div class="user-edit-form-actions">
+                    <a href="{{ url_for('users') }}" class="button button-secondary">Cancel</a>
+                    <button type="submit" class="button button-primary">Create account</button>
+                </div>
+            </form>
+        </section>
+
+        <aside class="user-create-info">
+            <span class="directory-sidebar-icon" aria-hidden="true">i</span>
+            <h3>Before you create</h3>
+            <p>Use this form for accounts that are not already represented as a doctor or staff member.</p>
+            <ul>
+                <li>Email is the login identifier.</li>
+                <li>The role controls permissions.</li>
+                <li>Passwords are securely hashed.</li>
+            </ul>
+        </aside>
+    </div>
+</div>
+{% endblock %}

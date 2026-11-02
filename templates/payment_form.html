@@ -10,23 +10,30 @@
         <p>Record a full or partial payment against a patient invoice.</p>
     </div>
 
-    <a href="{{ url_for('payments') }}" class="btn btn-secondary">
+    <a href="{{ url_for('payments') }}" class="button button-secondary">
         Back to Payments
     </a>
 </div>
 
-<div class="form-panel">
+<div class="panel payment-form-panel">
+    <div class="payment-form-intro">
+        <span class="payment-step">1</span>
+        <div>
+            <h2>Select invoice</h2>
+            <p>Choose an unpaid or partially paid invoice. The outstanding balance is calculated automatically.</p>
+        </div>
+    </div>
     <form method="POST" action="{{ url_for('add_payment') }}">
         <div class="form-grid">
-            <div class="form-group">
+            <div class="form-group full-width">
                 <label for="bill_id">Invoice / Patient *</label>
                 <select id="bill_id" name="bill_id" required>
                     <option value="">Select an invoice</option>
                     {% for bill in bills %}
                     <option value="{{ bill.id }}"
                         {% if request.form.get('bill_id') == bill.id|string %}selected{% endif %}>
-                        {{ bill.invoice_number }} —
-                        {{ bill.patient.first_name }} {{ bill.patient.last_name }}
+                        {{ bill.invoice_number }} — {{ bill.patient.first_name }} {{ bill.patient.last_name }}
+                        — Balance: {{ "%.2f"|format(bill_balances[bill.id]) }}
                     </option>
                     {% endfor %}
                 </select>
@@ -84,12 +91,20 @@
             </div>
         </div>
 
+        <div class="payment-form-intro payment-form-intro-secondary">
+            <span class="payment-step">2</span>
+            <div>
+                <h2>Payment details</h2>
+                <p>Enter the amount received and keep a receipt or transaction reference when available.</p>
+            </div>
+        </div>
+
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">
+            <button type="submit" class="button button-primary">
                 Record Payment
             </button>
 
-            <a href="{{ url_for('payments') }}" class="btn btn-secondary">
+            <a href="{{ url_for('payments') }}" class="button button-secondary">
                 Cancel
             </a>
         </div>

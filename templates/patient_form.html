@@ -1,15 +1,17 @@
 
 {% extends "base.html" %}
 
-{% block title %}Register Patient | Hospital HMS{% endblock %}
-{% block page_heading %}Register Patient{% endblock %}
+{% set editing = patient is defined %}
+
+{% block title %}{{ 'Edit Patient' if editing else 'Register Patient' }} | Hospital HMS{% endblock %}
+{% block page_heading %}{{ 'Edit Patient' if editing else 'Register Patient' }}{% endblock %}
 
 {% block content %}
 
 <div class="welcome-section">
     <div>
-        <h2>New Patient Registration</h2>
-        <p>Enter the patient's details below.</p>
+        <h2>{{ 'Update Patient Details' if editing else 'New Patient Registration' }}</h2>
+        <p>{{ 'Update the patient profile below.' if editing else 'Enter the patient\'s details below.' }}</p>
     </div>
     <a class="button button-secondary" href="{{ url_for('patients') }}">
         Back to Patients
@@ -23,27 +25,27 @@
 {% endwith %}
 
 <div class="panel form-panel">
-    <form method="POST" action="{{ url_for('add_patient') }}">
+    <form method="POST" action="{{ url_for('edit_patient', patient_id=patient.id) if editing else url_for('add_patient') }}">
         <div class="form-grid">
             <div class="form-group">
                 <label for="first_name">First Name *</label>
                 <input type="text" id="first_name" name="first_name"
                        maxlength="100" required
-                       value="{{ request.form.get('first_name', '') }}">
+                       value="{{ patient.first_name if editing else request.form.get('first_name', '') }}">
             </div>
 
             <div class="form-group">
                 <label for="last_name">Last Name *</label>
                 <input type="text" id="last_name" name="last_name"
                        maxlength="100" required
-                       value="{{ request.form.get('last_name', '') }}">
+                       value="{{ patient.last_name if editing else request.form.get('last_name', '') }}">
             </div>
 
             <div class="form-group">
                 <label for="date_of_birth">Date of Birth *</label>
                 <input type="date" id="date_of_birth" name="date_of_birth"
                        required max="{{ today or '' }}"
-                       value="{{ request.form.get('date_of_birth', '') }}">
+                       value="{{ patient.date_of_birth.isoformat() if editing else request.form.get('date_of_birth', '') }}">
             </div>
 
             <div class="form-group">
@@ -52,7 +54,7 @@
                     <option value="">Select gender</option>
                     {% for option in ['Male', 'Female', 'Other'] %}
                     <option value="{{ option }}"
-                        {% if request.form.get('gender') == option %}selected{% endif %}>
+                        {% if (patient.gender if editing else request.form.get('gender')) == option %}selected{% endif %}>
                         {{ option }}
                     </option>
                     {% endfor %}
@@ -63,13 +65,13 @@
                 <label for="phone">Phone Number *</label>
                 <input type="tel" id="phone" name="phone"
                        maxlength="20" required
-                       value="{{ request.form.get('phone', '') }}">
+                       value="{{ patient.phone if editing else request.form.get('phone', '') }}">
             </div>
 
             <div class="form-group full-width">
                 <label for="address">Address</label>
                 <textarea id="address" name="address" rows="3"
-                          maxlength="255">{{ request.form.get('address', '') }}</textarea>
+                          maxlength="255">{{ patient.address if editing else request.form.get('address', '') }}</textarea>
             </div>
         </div>
 
@@ -78,7 +80,7 @@
                 Cancel
             </a>
             <button type="submit" class="button button-primary">
-                Save Patient
+                {{ 'Update Patient' if editing else 'Save Patient' }}
             </button>
         </div>
     </form>

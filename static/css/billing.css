@@ -48,6 +48,101 @@
 .payment-page {
     width: 100%;
     min-width: 0;
+    max-width: none;
+}
+
+.payment-summary {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.payment-summary-card {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 20px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--white);
+    box-shadow: var(--shadow-sm);
+}
+
+.payment-summary-card span {
+    color: var(--muted);
+    font-size: 13px;
+}
+
+.payment-summary-card strong {
+    color: var(--primary);
+    font-size: 24px;
+}
+
+.payment-search {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.payment-search input {
+    flex: 1;
+    min-height: 42px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--surface-soft);
+    color: var(--text);
+    font: inherit;
+}
+
+.payment-search input:focus {
+    outline: 2px solid var(--almond-silk);
+    border-color: var(--wine-plum);
+}
+
+.payment-form-panel {
+    width: 100%;
+    max-width: none;
+}
+
+.payment-form-intro {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 22px;
+}
+
+.payment-form-intro-secondary {
+    margin-top: 30px;
+}
+
+.payment-form-intro h2 {
+    margin: 0 0 4px;
+    color: var(--primary);
+    font-size: 18px;
+}
+
+.payment-form-intro p {
+    margin: 0;
+    color: var(--muted);
+}
+
+.payment-step {
+    display: grid;
+    width: 28px;
+    height: 28px;
+    flex: 0 0 28px;
+    place-items: center;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--white);
+    font-weight: bold;
+}
+
+.payment-amount {
+    color: var(--green) !important;
+    font-weight: bold;
 }
 
 .payment-page .page-header {
@@ -69,6 +164,7 @@
 
 .payment-page .form-panel {
     width: 100%;
+    max-width: none;
     padding: 24px;
     background: var(--surface, #ffffff);
     border: 1px solid var(--border-color, #e2e8f0);
@@ -83,6 +179,7 @@
 
 .payment-page .data-table {
     width: 100%;
+    table-layout: fixed;
     border-collapse: collapse;
     text-align: left;
 }
@@ -103,6 +200,7 @@
     border-bottom: 1px solid var(--border-color, #e2e8f0);
     color: var(--text-color, #0f172a);
     font-size: 14px;
+    overflow-wrap: anywhere;
 }
 
 .payment-page .data-table tbody tr:last-child td {
@@ -199,6 +297,19 @@
 }
 
 @media (max-width: 640px) {
+    .payment-summary {
+        grid-template-columns: 1fr;
+    }
+
+    .payment-search {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .payment-search .button {
+        width: 100%;
+    }
+
     .payment-page .page-header {
         align-items: flex-start;
         flex-direction: column;

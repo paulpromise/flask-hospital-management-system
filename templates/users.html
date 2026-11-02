@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+
+{% block title %}User Management | Hospital HMS{% endblock %}
+{% block page_heading %}User Management{% endblock %}
+
+{% block content %}
+<div class="directory-page">
+    <header class="directory-header">
+        <div>
+            <p class="user-page-eyebrow">Administration / Directory</p>
+            <h2>Hospital user directory</h2>
+            <p>Manage identities, roles, and login access from one central console.</p>
+        </div>
+        <div class="directory-header-actions">
+            <a href="{{ url_for('add_user') }}" class="button button-primary">New user</a>
+        </div>
+    </header>
+
+    <div class="directory-layout directory-layout-wide">
+        <aside class="directory-sidebar">
+            <div class="directory-sidebar-heading">
+                <span class="directory-sidebar-icon" aria-hidden="true">H</span>
+                <div>
+                    <strong>Hospital HMS</strong>
+                    <small>Access directory</small>
+                </div>
+            </div>
+            <nav class="directory-nav" aria-label="Directory views">
+                <button type="button" class="directory-nav-item {% if directory_view == 'all' %}is-selected{% endif %}" data-directory-view="all">
+                    <span>All accounts</span><strong>{{ users|length }}</strong>
+                </button>
+                <button type="button" class="directory-nav-item {% if directory_view == 'active' %}is-selected{% endif %}" data-directory-view="active">
+                    <span>Active accounts</span><strong>{{ users|selectattr('is_active')|list|length }}</strong>
+                </button>
+                <button type="button" class="directory-nav-item {% if directory_view == 'disabled' %}is-selected{% endif %}" data-directory-view="disabled">
+                    <span>Disabled accounts</span><strong>{{ users|rejectattr('is_active')|list|length }}</strong>
+                </button>
+                {% if available_doctors or available_staff %}
+                <button type="button" class="directory-nav-item {% if directory_view == 'pending' %}is-selected{% endif %}" data-directory-view="pending">
+                    <span>Pending access</span><strong>{{ available_doctors|length + available_staff|length }}</strong>
+                </button>
+                {% endif %}
+            </nav>
+            <div class="directory-sidebar-footer">
+                <span class="status-dot-inline"></span>
+                <span>Directory services online</span>
+            </div>
+        </aside>
+
+        <main class="directory-main">
+            <section class="directory-panel" data-directory-panel="accounts" {% if directory_view == 'pending' %}hidden{% endif %}>
+                <div class="directory-panel-header">
+                    <div>
+                        <h3>Accounts</h3>
+                        <p>All registered login identities in the hospital system.</p>
+                    </div>
+                    <span class="directory-result-count" data-user-count>{{ users|length }} accounts</span>
+                </div>
+                <div class="directory-toolbar">
+                    <label class="directory-search">
+                        <span aria-hidden="true">⌕</span>
+                        <span class="sr-only">Search accounts</span>
+                        <input type="search" data-user-search placeholder="Search accounts">
+                    </label>
+                    <label>
+                        <span class="sr-only">Filter by role</span>
+                        <select data-user-role>
+                            <option value="">All roles</option>
+                            {% for role in roles %}
+                            <option value="{{ role }}">{{ role|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </label>
+                    <button type="button" class="button button-secondary button-small" data-clear-user-filters>Clear</button>
+                </div>
+                <div class="directory-table-wrap">
+                    <table class="data-table directory-table">
+                        <thead>
+                            <tr>
+                                <th>Display name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th><span class="sr-only">Actions</span></th>
+                            </tr>
+                        </thead>
+                        <tbody data-user-rows>
+                            {% for user in users %}
+                            <tr data-user-row
+                                data-user-id="{{ user.id }}"
+                                data-user-search-value="{{ user.username }} {{ user.email }}"
+                                data-user-role-value="{{ user.role }}"
+                                data-user-status-value="{{ 'active' if user.is_active else 'disabled' }}"
+                                data-user-name="{{ user.username }}"
+                                data-user-email="{{ user.email }}"
+                                data-user-created="{{ user.created_at.strftime('%d %b %Y') if user.created_at else 'Unknown' }}"
+                                data-user-role-label="{{ user.role|title }}"
+                                data-user-status-label="{{ 'Active' if user.is_active else 'Disabled' }}">
+                                <td>
+                                    <div class="directory-identity">
+                                        <span class="user-avatar">{{ user.username[:1]|upper }}</span>
+                                        <strong>{{ user.username }}</strong>
+                                    </div>
+                                </td>
+                                <td>{{ user.email }}</td>
+                                <td><span class="role-badge">{{ user.role|title }}</span></td>
+                                <td>
+                                    <span class="status-label {{ 'status-active' if user.is_active else 'status-inactive' }}">
+                                        <span class="status-dot-inline"></span>
+                                        {{ 'Active' if user.is_active else 'Disabled' }}
+                                    </span>
+                                </td>
+                                <td>{{ user.created_at.strftime('%d %b %Y') if user.created_at else '—' }}</td>
+                                <td class="directory-action-cell">
+                                    <a href="{{ url_for('edit_user', user_id=user.id) }}" class="button button-secondary button-small">Edit</a>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr><td colspan="6" class="empty-state">No user accounts exist.</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                    <p class="user-filter-empty" data-user-filter-empty hidden>No accounts match the current view.</p>
+                </div>
+            </section>
+
+            {% if available_doctors or available_staff %}
+            <section class="directory-panel directory-pending-panel" data-directory-panel="pending" {% if directory_view != 'pending' %}hidden{% endif %}>
+                <div class="directory-panel-header">
+                    <div>
+                        <h3>Pending access</h3>
+                        <p>Personnel records that do not yet have a login account.</p>
+                    </div>
+                    <span class="directory-result-count">
+                        {{ pending_total }} people · page {{ pending_page }} of {{ pending_pages }}
+                    </span>
+                </div>
+                <div class="directory-table-wrap">
+                    <table class="data-table directory-table">
+                        <thead>
+                            <tr><th>Person</th><th>Type</th><th>Email</th><th><span class="sr-only">Actions</span></th></tr>
+                        </thead>
+                        <tbody>
+                            {% for pending in pending_people %}
+                            {% set person = pending.person %}
+                            <tr>
+                                <td><strong>{{ 'Dr. ' if pending.entity_type == 'doctor' else '' }}{{ person.first_name }} {{ person.last_name }}</strong></td>
+                                <td>{{ 'Doctor' if pending.entity_type == 'doctor' else person.job_title or 'Staff' }}</td>
+                                <td>{{ person.email }}</td>
+                                <td class="directory-action-cell">
+                                    <a href="{{ url_for('provision_user', entity_type=pending.entity_type, entity_id=person.id) }}" class="button button-secondary button-small">Edit access</a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% if pending_pages > 1 %}
+                <nav class="directory-pagination" aria-label="Pending access pages">
+                    {% if pending_page > 1 %}
+                    <a href="{{ url_for('users', view='pending', pending_page=pending_page - 1) }}" class="button button-secondary button-small">Previous</a>
+                    {% else %}
+                    <span class="button button-secondary button-small is-disabled">Previous</span>
+                    {% endif %}
+                    <span>Page {{ pending_page }} of {{ pending_pages }}</span>
+                    {% if pending_page < pending_pages %}
+                    <a href="{{ url_for('users', view='pending', pending_page=pending_page + 1) }}" class="button button-secondary button-small">Next</a>
+                    {% else %}
+                    <span class="button button-secondary button-small is-disabled">Next</span>
+                    {% endif %}
+                </nav>
+                {% endif %}
+            </section>
+            {% endif %}
+
+        </main>
+
+    </div>
+</div>
+<script src="{{ url_for('static', filename='js/user-management.js') }}" defer></script>
+{% endblock %}

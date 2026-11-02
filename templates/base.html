@@ -13,9 +13,10 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/forms.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/billing.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/search.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/user-management.css') }}">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/responsive.css') }}">
 </head>
-<body>
+<body{% if directory_view is defined %} data-directory-view="{{ directory_view }}"{% endif %}>
     <aside class="sidebar">
         <div class="brand">
             <div class="brand-icon">H</div>
@@ -29,26 +30,51 @@
 
         <nav class="navigation">
             <a href="{{ url_for('home') }}" class="nav-link{% if request.endpoint == 'home' %} active{% endif %}">▦ Dashboard</a>
-            <a href="{{ url_for('patients') }}" class="nav-link{% if request.endpoint in ['patients', 'add_patient'] %} active{% endif %}">♙ Patients</a>
-            <a href="{{ url_for('doctors') }}" class="nav-link{% if request.endpoint in ['doctors', 'add_doctor'] %} active{% endif %}">✚ Doctors</a>
+
+            {% if can_user_access('patients:view') %}
+            <a href="{{ url_for('patients') }}" class="nav-link{% if request.endpoint in ['patients', 'add_patient', 'edit_patient'] %} active{% endif %}">♙ Patients</a>
+            {% endif %}
+
+            {% if can_user_access('doctors:view') %}
+            <a href="{{ url_for('doctors') }}" class="nav-link{% if request.endpoint in ['doctors', 'add_doctor', 'edit_doctor'] %} active{% endif %}">✚ Doctors</a>
+            {% endif %}
+
+            {% if can_user_access('departments:view') %}
             <a href="{{ url_for('departments') }}" class="nav-link{% if request.endpoint in ['departments', 'add_department'] %} active{% endif %}">▤ Departments</a>
+            {% endif %}
+
+            {% if can_user_access('appointments:view') %}
             <a href="{{ url_for('appointments') }}" class="nav-link{% if request.endpoint in ['appointments', 'add_appointment', 'update_appointment_status'] %} active{% endif %}">▣ Appointments</a>
+            {% endif %}
 
+            {% if can_user_access('records:view') or can_user_access('prescriptions:view') or can_user_access('medications:view') %}
             <p class="nav-heading">CLINICAL</p>
+            {% if can_user_access('records:view') %}
             <a href="{{ url_for('medical_records') }}" class="nav-link{% if request.endpoint in ['medical_records', 'add_medical_record'] %} active{% endif %}">▧ Medical Records</a>
-            
+            {% endif %}
+            {% if can_user_access('prescriptions:view') %}
             <a href="{{ url_for('prescriptions') }}" class="nav-link{% if request.endpoint in ['prescriptions', 'add_prescription', 'prescription_detail'] %} active{% endif %}">▧ Prescriptions</a>
-
+            {% endif %}
+            {% if can_user_access('medications:view') %}
             <a href="{{ url_for('medications') }}" class="nav-link{% if request.endpoint in ['medications', 'add_medication'] %} active{% endif %}">▧ Medications</a>
+            {% endif %}
+            {% endif %}
 
-                        
+            {% if can_user_access('billing:view') or can_user_access('payments:view') or can_user_access('staff:view') or can_user_access('system:manage') %}
             <p class="nav-heading">ADMINISTRATION</p>
+            {% if can_user_access('billing:view') %}
             <a href="{{ url_for('billing') }}" class="nav-link{% if request.endpoint in ['billing', 'add_bill', 'bill_detail', 'edit_bill'] %} active{% endif %}">▧ Billing</a>
+            {% endif %}
+            {% if can_user_access('payments:view') %}
             <a href="{{ url_for('payments') }}" class="nav-link{% if request.endpoint in ['payments', 'add_payment'] %} active{% endif %}">▧ Payments</a>
-            <a href="{{ url_for('staff') }}" class="nav-link{% if request.endpoint in ['staff', 'add_staff'] %} active{% endif %}">Staff Management</a>
-
-                
-
+            {% endif %}
+            {% if can_user_access('staff:view') %}
+            <a href="{{ url_for('staff') }}" class="nav-link{% if request.endpoint in ['staff', 'add_staff', 'edit_staff'] %} active{% endif %}">Staff Management</a>
+            {% endif %}
+            {% if can_user_access('system:manage') %}
+            <a href="{{ url_for('users') }}" class="nav-link{% if request.endpoint in ['users', 'add_user', 'edit_user', 'toggle_user_status'] %} active{% endif %}">User Management</a>
+            {% endif %}
+            {% endif %}
         </nav>
 
         <div class="sidebar-footer">
@@ -63,10 +89,13 @@
                 <p class="eyebrow">HOSPITAL MANAGEMENT</p>
                 <h1>{% block page_heading %}Dashboard{% endblock %}</h1>
             </div>
+            {% if current_user.is_authenticated %}
             <div class="admin-label">
-                <span class="avatar">A</span>
-                <span>Administrator</span>
+                <span class="avatar">{{ current_user.username[:1]|upper }}</span>
+                <span>{{ current_user.role|title }}</span>
+                <a href="{{ url_for('logout') }}" class="button button-secondary">Logout</a>
             </div>
+            {% endif %}
         </header>
 
         <section class="page-content">

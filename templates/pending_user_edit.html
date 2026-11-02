@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block title %}Create Login for {{ person.first_name }} {{ person.last_name }} | Hospital HMS{% endblock %}
+{% block page_heading %}Create Login Account{% endblock %}
+
+{% block content %}
+<div class="user-edit-page">
+    <div class="user-edit-header">
+        <div>
+            <p class="user-page-eyebrow">User management / Pending access</p>
+            <div class="user-edit-title">
+                <span class="user-edit-avatar">{{ person.first_name[:1]|upper }}{{ person.last_name[:1]|upper }}</span>
+                <div>
+                    <h2>{{ 'Dr. ' if entity_type == 'doctor' else '' }}{{ person.first_name }} {{ person.last_name }}</h2>
+                    <p>Create login credentials for this existing {{ 'doctor' if entity_type == 'doctor' else 'staff member' }}.</p>
+                </div>
+            </div>
+        </div>
+        <a href="{{ url_for('users') }}" class="button button-secondary">Back to users</a>
+    </div>
+
+    <div class="user-edit-layout pending-user-layout">
+        <main>
+            <section class="user-edit-section">
+                <div class="user-edit-section-heading">
+                    <div>
+                        <h3>Login account details</h3>
+                        <p>Choose the credentials this person will use to access the hospital system.</p>
+                    </div>
+                </div>
+                <form method="POST" action="{{ url_for('provision_user', entity_type=entity_type, entity_id=person.id) }}" class="user-edit-form">
+                    <div class="user-form-field">
+                        <label for="email">Hospital email *</label>
+                        <input type="email" id="email" value="{{ person.email }}" readonly>
+                        <small>This email will be used to sign in.</small>
+                    </div>
+                    <div class="user-form-field">
+                        <label for="role">Role *</label>
+                        <select id="role" name="role" required>
+                            {% for role in roles %}
+                            <option value="{{ role }}" {% if role == default_role %}selected{% endif %}>{{ role|title }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="user-form-field">
+                        <label for="password">Initial password *</label>
+                        <input type="password" id="password" name="password" minlength="8" autocomplete="new-password" required>
+                        <small>The password cannot be viewed after account creation.</small>
+                    </div>
+                    <div class="user-edit-form-actions">
+                        <a href="{{ url_for('users') }}" class="button button-secondary">Cancel</a>
+                        <button type="submit" class="button button-primary">Create login account</button>
+                    </div>
+                </form>
+            </section>
+        </main>
+        <aside class="user-edit-sidebar">
+            <section class="user-edit-section">
+                <div class="user-edit-section-heading">
+                    <div>
+                        <h3>Personnel record</h3>
+                        <p>Account information will be linked to this existing record.</p>
+                    </div>
+                </div>
+                <dl class="pending-person-details">
+                    <div><dt>Name</dt><dd>{{ person.first_name }} {{ person.last_name }}</dd></div>
+                    <div><dt>Email</dt><dd>{{ person.email }}</dd></div>
+                    <div><dt>Type</dt><dd>{{ 'Doctor' if entity_type == 'doctor' else person.job_title or 'Staff' }}</dd></div>
+                </dl>
+            </section>
+        </aside>
+    </div>
+</div>
+{% endblock %}

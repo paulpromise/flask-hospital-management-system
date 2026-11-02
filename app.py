@@ -2,14 +2,23 @@ import os
 import uuid
 import secrets
 import string
-from datetime import datetime , date
+from datetime import datetime, date
+from functools import wraps
 from flask import Flask, render_template, request, redirect, url_for, flash
+from flask_login import (
+    LoginManager,
+    UserMixin,
+    current_user,
+    login_required,
+    login_user,
+    logout_user,
+)
 from dotenv import load_dotenv
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import CheckConstraint, UniqueConstraint, text, or_
 from sqlalchemy.engine import URL
 from decimal import Decimal, InvalidOperation
-from datetime import date
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 load_dotenv()
@@ -29,11 +38,144 @@ app.config["SQLALCHEMY_DATABASE_URI"] = URL.create(
 app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 
 db = SQLAlchemy(app)
+login_manager = LoginManager()
+login_manager.login_view = "login"
+login_manager.login_message = "Please log in to continue."
+login_manager.login_message_category = "error"
+login_manager.init_app(app)
 
 
 # Public IDs are separate from numeric primary keys so database relationships
 # remain stable. IDs use uppercase letters and digits and are checked for uniqueness.
 ID_CHARACTERS = string.ascii_uppercase + string.digits
+
+ROLE_PERMISSIONS = {
+    "admin": {
+        "patients:view",
+        "patients:edit",
+        "doctors:view",
+        "doctors:edit",
+        "staff:view",
+        "staff:edit",
+        "appointments:view",
+        "appointments:edit",
+        "billing:view",
+        "billing:edit",
+        "records:view",
+        "records:edit",
+        "prescriptions:view",
+        "prescriptions:edit",
+        "departments:view",
+        "departments:edit",
+        "medications:view",
+        "medications:edit",
+        "payments:view",
+        "payments:edit",
+        "system:manage",
+    },
+    "doctor": {
+        "patients:view",
+        "patients:edit",
+        "doctors:view",
+        "appointments:view",
+        "records:view",
+        "records:edit",
+        "prescriptions:view",
+        "prescriptions:edit",
+        "departments:view",
+        "medications:view",
+        "payments:view",
+    },
+    "nurse": {
+        "patients:view",
+        "appointments:view",
+        "records:view",
+        "records:edit",
+        "medications:view",
+    },
+    "receptionist": {
+        "patients:view",
+        "patients:edit",
+        "appointments:view",
+        "appointments:edit",
+        "billing:view",
+        "billing:edit",
+        "staff:view",
+        "departments:view",
+        "departments:edit",
+        "medications:view",
+        "medications:edit",
+        "payments:view",
+        "payments:edit",
+    },
+    "staff": {
+        "staff:view",
+    },
+}
+
+ENDPOINT_PERMISSIONS = {
+    "patients": "patients:view",
+    "add_patient": "patients:edit",
+    "edit_patient": "patients:edit",
+    "doctors": "doctors:view",
+    "add_doctor": "doctors:edit",
+    "edit_doctor": "doctors:edit",
+    "departments": "departments:view",
+    "add_department": "departments:edit",
+    "appointments": "appointments:view",
+    "add_appointment": "appointments:edit",
+    "update_appointment_status": "appointments:edit",
+    "medical_records": "records:view",
+    "add_medical_record": "records:edit",
+    "prescriptions": "prescriptions:view",
+    "add_prescription": "prescriptions:edit",
+    "prescription_detail": "prescriptions:edit",
+    "medications": "medications:view",
+    "add_medication": "medications:edit",
+    "billing": "billing:view",
+    "add_bill": "billing:edit",
+    "bill_detail": "billing:view",
+    "edit_bill": "billing:edit",
+    "payments": "payments:view",
+    "add_payment": "payments:edit",
+    "staff": "staff:view",
+    "add_staff": "staff:edit",
+    "edit_staff": "staff:edit",
+    "toggle_user_status": "system:manage",
+    "users": "system:manage",
+    "add_user": "system:manage",
+    "edit_user": "system:manage",
+    "set_user_password": "system:manage",
+}
+
+
+def can_user_access(permission_name):
+    if not current_user.is_authenticated:
+        return False
+    return permission_name in ROLE_PERMISSIONS.get(current_user.role, set())
+
+
+def permission_required(permission_name):
+    def decorator(view_func):
+        @login_required
+        @wraps(view_func)
+        def wrapper(*args, **kwargs):
+            if not can_user_access(permission_name):
+                flash("You do not have permission to perform this action.", "error")
+                return redirect(url_for("home"))
+            return view_func(*args, **kwargs)
+
+        return wrapper
+
+    return decorator
+
+
+app.jinja_env.globals["can_user_access"] = can_user_access
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    return db.session.get(User, int(user_id))
 
 
 def generate_public_id(model, field_name, prefix, random_length):
@@ -150,7 +292,7 @@ class Staff(db.Model):
 # Store password hashes, never plain-text passwords.
 # ==========================================================
 
-class User(db.Model):
+class User(UserMixin, db.Model):
     __tablename__ = "users"
 
     id = db.Column(db.Integer, primary_key=True)
@@ -174,10 +316,46 @@ class User(db.Model):
 
     __table_args__ = (
         CheckConstraint(
-            "role IN ('admin', 'doctor', 'nurse', 'receptionist')",
+            "role IN ('admin', 'doctor', 'nurse', 'receptionist', 'staff')",
             name="ck_users_role",
         ),
     )
+
+    @property
+    def is_authenticated(self):
+        return True
+
+    @property
+    def is_anonymous(self):
+        return False
+
+
+def generate_login_username(email):
+    base = "".join(
+        character for character in email.split("@", 1)[0].lower()
+        if character.isalnum() or character in {"-", "_", "."}
+    ).strip("._-") or "user"
+    candidate = base
+    suffix = 2
+    while User.query.filter(db.func.lower(User.username) == candidate.lower()).first():
+        candidate = f"{base}{suffix}"
+        suffix += 1
+    return candidate
+
+
+with app.app_context():
+    db.create_all()
+    if not User.query.first():
+        db.session.add(
+            User(
+                username="admin",
+                email="admin@hospital.local",
+                password_hash=generate_password_hash("admin"),
+                role="admin",
+                is_active=True,
+            )
+        )
+        db.session.commit()
 
 
 # ==========================================================
@@ -614,7 +792,25 @@ class Payment(db.Model):
 # ROUTES
 # ==========================================================
 
+@app.before_request
+def require_login():
+    allowed_routes = {"login", "logout", "static"}
+    if request.endpoint in allowed_routes:
+        return None
+    if not current_user.is_authenticated:
+        return redirect(url_for("login"))
+    if not current_user.is_active:
+        logout_user()
+        flash("Your account has been deactivated. Contact the administrator.", "error")
+        return redirect(url_for("login"))
+    permission_name = ENDPOINT_PERMISSIONS.get(request.endpoint)
+    if permission_name and not can_user_access(permission_name):
+        flash("You do not have permission to access this page.", "error")
+        return redirect(url_for("home"))
+
+
 @app.route("/")
+@login_required
 def home():
     total_patients = db.session.query(Patient).count()
     total_doctors = db.session.query(Doctor).count()
@@ -635,7 +831,41 @@ def home():
         total_departments=total_departments,
     )
 
+
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if current_user.is_authenticated:
+        return redirect(url_for("home"))
+
+    if request.method == "POST":
+        email = request.form.get("email", "").strip().lower()
+        password = request.form.get("password", "")
+
+        if not email or not password:
+            flash("Hospital email and password are required.", "error")
+            return render_template("login.html")
+
+        user = User.query.filter(db.func.lower(User.email) == email).first()
+        if user is None or not user.is_active or not check_password_hash(user.password_hash, password):
+            flash("Invalid hospital email or password.", "error")
+            return render_template("login.html")
+
+        login_user(user)
+        flash("Welcome back.", "success")
+        return redirect(url_for("home"))
+
+    return render_template("login.html")
+
+
+@app.route("/logout")
+@login_required
+def logout():
+    logout_user()
+    flash("You have been logged out.", "success")
+    return redirect(url_for("login"))
+
 @app.route("/patients")
+@login_required
 def patients():
     search = request.args.get("q", "").strip()
     query = Patient.query
@@ -659,6 +889,8 @@ def patients():
 
 
 @app.route("/patients/add", methods=["GET", "POST"])
+@login_required
+@permission_required("patients:edit")
 def add_patient():
     if request.method == "POST":
         first_name = request.form.get("first_name", "").strip()
@@ -704,6 +936,52 @@ def add_patient():
             flash("Unable to register the patient. Please try again.", "error")
 
     return render_template("patient_form.html")
+
+
+@app.route("/patients/<int:patient_id>/edit", methods=["GET", "POST"])
+@login_required
+@permission_required("patients:edit")
+def edit_patient(patient_id):
+    patient = db.get_or_404(Patient, patient_id)
+
+    if request.method == "POST":
+        first_name = request.form.get("first_name", "").strip()
+        last_name = request.form.get("last_name", "").strip()
+        date_of_birth = request.form.get("date_of_birth", "").strip()
+        gender = request.form.get("gender", "").strip()
+        phone = request.form.get("phone", "").strip()
+        address = request.form.get("address", "").strip()
+
+        if not all([first_name, last_name, date_of_birth, gender, phone]):
+            flash("Please complete all required fields.", "error")
+            return render_template("patient_form.html", patient=patient)
+
+        try:
+            birth_date = date.fromisoformat(date_of_birth)
+            if birth_date > date.today():
+                flash("Date of birth cannot be in the future.", "error")
+                return render_template("patient_form.html", patient=patient)
+        except ValueError:
+            flash("Please enter a valid date of birth.", "error")
+            return render_template("patient_form.html", patient=patient)
+
+        patient.first_name = first_name
+        patient.last_name = last_name
+        patient.date_of_birth = birth_date
+        patient.gender = gender
+        patient.phone = phone
+        patient.address = address or None
+
+        try:
+            db.session.commit()
+            flash("Patient information updated successfully.", "success")
+            return redirect(url_for("patients"))
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Failed to update patient")
+            flash("Unable to update the patient information.", "error")
+
+    return render_template("patient_form.html", patient=patient)
 
 
 @app.route("/departments")
@@ -757,6 +1035,7 @@ def add_department():
 
 
 @app.route("/doctors")
+@login_required
 def doctors():
     search = request.args.get("q", "").strip()
     query = Doctor.query
@@ -790,6 +1069,8 @@ def doctors():
 
 
 @app.route("/doctors/add", methods=["GET", "POST"])
+@login_required
+@permission_required("doctors:edit")
 def add_doctor():
     departments = Department.query.order_by(
         Department.name.asc()
@@ -802,6 +1083,8 @@ def add_doctor():
         phone = request.form.get("phone", "").strip()
         email = request.form.get("email", "").strip().lower()
         department_id = request.form.get("department_id", "").strip()
+        password = request.form.get("password", "")
+        create_login = request.form.get("create_login") == "on"
 
         if not all([
             first_name, last_name, specialization,
@@ -844,6 +1127,19 @@ def add_doctor():
         else:
             email = None
 
+        if create_login:
+            if not email or len(password) < 8:
+                flash("Email and an initial password of at least 8 characters are required for a doctor login.", "error")
+                return render_template("doctor_form.html", departments=departments)
+            username = generate_login_username(email)
+            if User.query.filter(
+                or_(
+                    db.func.lower(User.email) == email,
+                )
+            ).first():
+                flash("That username or email is already in use.", "error")
+                return render_template("doctor_form.html", departments=departments)
+
         doctor = Doctor(
             doctor_code=generate_public_id(Doctor, "doctor_code", "DOC-", 4),
             first_name=first_name,
@@ -856,6 +1152,16 @@ def add_doctor():
 
         try:
             db.session.add(doctor)
+            if create_login:
+                db.session.add(
+                    User(
+                        username=username,
+                        email=email,
+                        password_hash=generate_password_hash(password),
+                        role="doctor",
+                        is_active=True,
+                    )
+                )
             db.session.commit()
             flash("Doctor registered successfully.", "success")
             return redirect(url_for("doctors"))
@@ -868,6 +1174,63 @@ def add_doctor():
         "doctor_form.html",
         departments=departments,
     )
+
+
+@app.route("/doctors/<int:doctor_id>/edit", methods=["GET", "POST"])
+@login_required
+@permission_required("doctors:edit")
+def edit_doctor(doctor_id):
+    doctor = db.get_or_404(Doctor, doctor_id)
+    departments = Department.query.order_by(Department.name.asc()).all()
+
+    if request.method == "POST":
+        first_name = request.form.get("first_name", "").strip()
+        last_name = request.form.get("last_name", "").strip()
+        specialization = request.form.get("specialization", "").strip()
+        phone = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        department_id = request.form.get("department_id", "").strip()
+
+        if not all([first_name, last_name, specialization, phone, department_id]):
+            flash("Please complete all required fields.", "error")
+            return render_template("doctor_form.html", doctor=doctor, departments=departments)
+
+        try:
+            department_id = int(department_id)
+        except ValueError:
+            flash("Please select a valid department.", "error")
+            return render_template("doctor_form.html", doctor=doctor, departments=departments)
+
+        department = db.session.get(Department, department_id)
+        if department is None:
+            flash("The selected department does not exist.", "error")
+            return render_template("doctor_form.html", doctor=doctor, departments=departments)
+
+        if email:
+            existing = Doctor.query.filter(db.func.lower(Doctor.email) == email, Doctor.id != doctor.id).first()
+            if existing:
+                flash("A doctor with this email already exists.", "error")
+                return render_template("doctor_form.html", doctor=doctor, departments=departments)
+        else:
+            email = None
+
+        doctor.first_name = first_name
+        doctor.last_name = last_name
+        doctor.specialization = specialization
+        doctor.phone = phone
+        doctor.email = email
+        doctor.department_id = department_id
+
+        try:
+            db.session.commit()
+            flash("Doctor information updated successfully.", "success")
+            return redirect(url_for("doctors"))
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Failed to update doctor")
+            flash("Unable to update the doctor information.", "error")
+
+    return render_template("doctor_form.html", doctor=doctor, departments=departments)
 
 
 
@@ -1837,6 +2200,8 @@ def edit_bill(bill_id):
 
 
 @app.route("/staff")
+@login_required
+@permission_required("staff:view")
 def staff():
     search = request.args.get("q", "").strip()
     query = Staff.query
@@ -1852,15 +2217,22 @@ def staff():
     pagination = query.order_by(Staff.id.desc()).paginate(
         page=page, per_page=20, error_out=False
     )
+    user_lookup = {}
+    for member in pagination.items:
+        if member.email:
+            user_lookup[member.id] = User.query.filter(db.func.lower(User.email) == member.email.lower()).first()
     return render_template(
         "staff.html",
         staff_members=pagination.items,
         pagination=pagination,
         search=search,
+        user_lookup=user_lookup,
     )
 
 
 @app.route("/staff/add", methods=["GET", "POST"])
+@login_required
+@permission_required("staff:edit")
 def add_staff():
     departments = Department.query.order_by(
         Department.name.asc()
@@ -1873,54 +2245,73 @@ def add_staff():
         phone = request.form.get("phone", "").strip()
         email = request.form.get("email", "").strip().lower()
         department_id = request.form.get("department_id", "").strip()
+        password = request.form.get("password", "")
+        role = request.form.get("role", "").strip()
+        create_login = request.form.get("create_login") == "on"
 
         if not all([first_name, last_name, job_title, phone]):
             flash("Please complete all required fields.", "error")
-        else:
-            try:
-                department_id = int(department_id) if department_id else None
+            return render_template("staff_form.html", departments=departments)
 
-                if department_id is not None and db.session.get(
-                    Department, department_id
-                ) is None:
-                    raise ValueError
+        try:
+            department_id = int(department_id) if department_id else None
+            if department_id is not None and db.session.get(Department, department_id) is None:
+                raise ValueError("Invalid department.")
 
-                if email:
-                    existing_staff = Staff.query.filter(
-                        db.func.lower(Staff.email) == email
-                    ).first()
+            if email:
+                existing_staff = Staff.query.filter(db.func.lower(Staff.email) == email).first()
+                if existing_staff:
+                    flash("A staff member with this email already exists.", "error")
+                    return render_template("staff_form.html", departments=departments)
+            else:
+                email = None
 
-                    if existing_staff:
-                        flash("A staff member with this email already exists.", "error")
-                        return render_template(
-                            "staff_form.html",
-                            departments=departments,
-                        )
-                else:
-                    email = None
+            if create_login:
+                if not email or not password:
+                    flash("Email and password are required when creating a login account.", "error")
+                    return render_template("staff_form.html", departments=departments)
+                username = generate_login_username(email)
+                if role not in {"admin", "doctor", "nurse", "receptionist", "staff"}:
+                    flash("Please select a valid role.", "error")
+                    return render_template("staff_form.html", departments=departments)
+                if email and User.query.filter(db.func.lower(User.email) == email).first():
+                    flash("A login account already exists for this email.", "error")
+                    return render_template("staff_form.html", departments=departments)
 
-                member = Staff(
-                    staff_code=generate_public_id(Staff, "staff_code", "STF-", 6),
-                    first_name=first_name,
-                    last_name=last_name,
-                    job_title=job_title,
-                    phone=phone,
-                    email=email,
-                    department_id=department_id,
+            member = Staff(
+                staff_code=generate_public_id(Staff, "staff_code", "STF-", 6),
+                first_name=first_name,
+                last_name=last_name,
+                job_title=job_title,
+                phone=phone,
+                email=email,
+                department_id=department_id,
+            )
+
+            db.session.add(member)
+            db.session.flush()
+
+            if create_login:
+                user = User(
+                    username=username,
+                    email=email or f"{username}@hospital.local",
+                    password_hash=generate_password_hash(password),
+                    role=role,
+                    is_active=True,
                 )
+                db.session.add(user)
 
-                db.session.add(member)
-                db.session.commit()
+            db.session.commit()
+            flash("Staff member added successfully.", "success")
+            return redirect(url_for("staff"))
 
-                flash("Staff member added successfully.", "success")
-                return redirect(url_for("staff"))
-
-            except ValueError:
-                flash("Please select a valid department.", "error")
-            except Exception:
-                db.session.rollback()
-                app.logger.exception("Failed to add staff member")
-                flash("Unable to add the staff member.", "error")
+        except ValueError as error:
+            db.session.rollback()
+            flash(str(error) if str(error) else "Please select a valid department.", "error")
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Failed to add staff member")
+            flash("Unable to add the staff member.", "error")
 
     return render_template(
         "staff_form.html",
@@ -1928,20 +2319,343 @@ def add_staff():
     )
 
 
+@app.route("/staff/<int:staff_id>/edit", methods=["GET", "POST"])
+@login_required
+@permission_required("staff:edit")
+def edit_staff(staff_id):
+    member = db.get_or_404(Staff, staff_id)
+    departments = Department.query.order_by(Department.name.asc()).all()
+    linked_user = User.query.filter(db.func.lower(User.email) == member.email.lower()).first() if member.email else None
+
+    if request.method == "POST":
+        first_name = request.form.get("first_name", "").strip()
+        last_name = request.form.get("last_name", "").strip()
+        job_title = request.form.get("job_title", "").strip()
+        phone = request.form.get("phone", "").strip()
+        email = request.form.get("email", "").strip().lower()
+        department_id = request.form.get("department_id", "").strip()
+
+        if not all([first_name, last_name, job_title, phone]):
+            flash("Please complete all required fields.", "error")
+            return render_template("staff_form.html", departments=departments, staff=member, linked_user=linked_user)
+
+        try:
+            department_id = int(department_id) if department_id else None
+            if department_id is not None and db.session.get(Department, department_id) is None:
+                raise ValueError("Invalid department.")
+
+            if email:
+                existing = Staff.query.filter(db.func.lower(Staff.email) == email, Staff.id != member.id).first()
+                if existing:
+                    flash("A staff member with this email already exists.", "error")
+                    return render_template("staff_form.html", departments=departments, staff=member, linked_user=linked_user)
+            else:
+                email = None
+
+            member.first_name = first_name
+            member.last_name = last_name
+            member.job_title = job_title
+            member.phone = phone
+            member.email = email
+            member.department_id = department_id
+
+            if linked_user is not None:
+                linked_user.email = email or linked_user.email
+                linked_user.username = linked_user.username or member.email or linked_user.username
+
+            db.session.commit()
+            flash("Staff information updated successfully.", "success")
+            return redirect(url_for("staff"))
+        except ValueError as error:
+            db.session.rollback()
+            flash(str(error) if str(error) else "Please select a valid department.", "error")
+        except Exception:
+            db.session.rollback()
+            app.logger.exception("Failed to update staff member")
+            flash("Unable to update the staff member.", "error")
+
+    return render_template("staff_form.html", departments=departments, staff=member, linked_user=linked_user)
+
+
+@app.route("/users/<int:user_id>/toggle-status", methods=["POST"])
+@login_required
+@permission_required("system:manage")
+def toggle_user_status(user_id):
+    user = db.get_or_404(User, user_id)
+    if user.id == current_user.id:
+        flash("You cannot deactivate your own account.", "error")
+        return redirect(url_for("users"))
+
+    user.is_active = not user.is_active
+    db.session.commit()
+    status = "activated" if user.is_active else "deactivated"
+    flash(f"User account {status} successfully.", "success")
+    return redirect(url_for("users"))
+
+
+@app.route("/users")
+@login_required
+@permission_required("system:manage")
+def users():
+    directory_view = request.args.get("view", "all")
+    if directory_view not in {"all", "active", "disabled", "pending"}:
+        directory_view = "all"
+    linked_emails = {
+        user.email.lower()
+        for user in User.query.with_entities(User.email).all()
+        if user.email
+    }
+    available_doctors = [
+        doctor for doctor in Doctor.query.order_by(Doctor.last_name, Doctor.first_name).all()
+        if doctor.email and doctor.email.lower() not in linked_emails
+    ]
+    available_staff = [
+        member for member in Staff.query.order_by(Staff.last_name, Staff.first_name).all()
+        if member.email and member.email.lower() not in linked_emails
+    ]
+    pending_people = [
+        {"person": doctor, "entity_type": "doctor"}
+        for doctor in available_doctors
+    ] + [
+        {"person": member, "entity_type": "staff"}
+        for member in available_staff
+    ]
+    pending_people.sort(
+        key=lambda item: (
+            item["person"].last_name.lower(),
+            item["person"].first_name.lower(),
+        )
+    )
+    pending_per_page = 20
+    pending_total = len(pending_people)
+    pending_pages = max(1, (pending_total + pending_per_page - 1) // pending_per_page)
+    pending_page = request.args.get("pending_page", 1, type=int)
+    pending_page = min(max(pending_page, 1), pending_pages)
+    pending_start = (pending_page - 1) * pending_per_page
+    pending_people_page = pending_people[pending_start:pending_start + pending_per_page]
+
+    return render_template(
+        "users.html",
+        users=User.query.order_by(User.username.asc()).all(),
+        roles=sorted(ROLE_PERMISSIONS),
+        permissions=ROLE_PERMISSIONS,
+        available_doctors=available_doctors,
+        available_staff=available_staff,
+        pending_people=pending_people_page,
+        pending_page=pending_page,
+        pending_pages=pending_pages,
+        pending_total=pending_total,
+        directory_view=directory_view,
+    )
+
+
+@app.route("/users/add", methods=["GET", "POST"])
+@login_required
+@permission_required("system:manage")
+def add_user():
+    if request.method == "GET":
+        return render_template(
+            "user_create.html",
+            roles=sorted(ROLE_PERMISSIONS),
+        )
+
+    email = request.form.get("email", "").strip().lower()
+    role = request.form.get("role", "").strip()
+    password = request.form.get("password", "")
+
+    if not all([email, role, password]):
+        flash("Email, role, and initial password are required.", "error")
+        return redirect(url_for("users"))
+
+    if len(password) < 8:
+        flash("The initial password must contain at least 8 characters.", "error")
+        return redirect(url_for("users"))
+
+    if role not in ROLE_PERMISSIONS:
+        flash("Please select a valid role.", "error")
+        return redirect(url_for("users"))
+
+    if User.query.filter(
+        or_(
+            db.func.lower(User.email) == email,
+        )
+    ).first():
+        flash("That username or email is already in use.", "error")
+        return redirect(url_for("users"))
+
+    user = User(
+        username=generate_login_username(email),
+        email=email,
+        password_hash=generate_password_hash(password),
+        role=role,
+        is_active=True,
+    )
+    try:
+        db.session.add(user)
+        db.session.commit()
+        flash("User account created successfully.", "success")
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Failed to create user account")
+        flash("Unable to create the user account.", "error")
+
+    return redirect(url_for("users"))
+
+
+@app.route("/users/<int:user_id>/set-password", methods=["POST"])
+@login_required
+@permission_required("system:manage")
+def set_user_password(user_id):
+    user = db.get_or_404(User, user_id)
+    password = request.form.get("password", "")
+
+    if len(password) < 8:
+        flash("The new password must contain at least 8 characters.", "error")
+        return redirect(url_for("users"))
+
+    user.password_hash = generate_password_hash(password)
+    try:
+        db.session.commit()
+        flash(f"Password updated for {user.username}. The password is not displayed or recoverable.", "success")
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Failed to set password for user %s", user_id)
+        flash("Unable to update the user password.", "error")
+
+    return redirect(url_for("users"))
+
+
+@app.route("/users/<int:user_id>/edit", methods=["GET", "POST"])
+@login_required
+@permission_required("system:manage")
+def edit_user(user_id):
+    user = db.get_or_404(User, user_id)
+    if request.method == "GET":
+        return render_template(
+            "user_edit.html",
+            user=user,
+            roles=sorted(ROLE_PERMISSIONS),
+            permissions=ROLE_PERMISSIONS[user.role],
+        )
+
+    email = request.form.get("email", "").strip().lower()
+    role = request.form.get("role", "").strip()
+
+    if not all([email, role]) or role not in ROLE_PERMISSIONS:
+        flash("Email and a valid role are required.", "error")
+        return redirect(url_for("users"))
+
+    duplicate = User.query.filter(
+        User.id != user.id,
+        or_(
+            db.func.lower(User.email) == email,
+        ),
+    ).first()
+    if duplicate:
+        flash("That username or email is already in use.", "error")
+        return redirect(url_for("users"))
+
+    if user.id == current_user.id and role != "admin":
+        flash("You cannot remove your own administrator role.", "error")
+        return redirect(url_for("users"))
+
+    user.email = email
+    user.role = role
+    try:
+        db.session.commit()
+        flash("User account updated successfully.", "success")
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Failed to update user account")
+        flash("Unable to update the user account.", "error")
+
+    return redirect(url_for("users"))
+
+
+@app.route("/users/provision/<string:entity_type>/<int:entity_id>", methods=["GET", "POST"])
+@login_required
+@permission_required("system:manage")
+def provision_user(entity_type, entity_id):
+    if entity_type == "doctor":
+        person = db.get_or_404(Doctor, entity_id)
+        default_role = "doctor"
+    elif entity_type == "staff":
+        person = db.get_or_404(Staff, entity_id)
+        default_role = "staff"
+    else:
+        flash("Invalid account type.", "error")
+        return redirect(url_for("users"))
+
+    if request.method == "GET":
+        return render_template(
+            "pending_user_edit.html",
+            person=person,
+            entity_type=entity_type,
+            default_role=default_role,
+            roles=sorted(ROLE_PERMISSIONS),
+        )
+
+    password = request.form.get("password", "")
+    role = request.form.get("role", default_role).strip()
+    email = (person.email or "").strip().lower()
+
+    if not email or len(password) < 8 or role not in ROLE_PERMISSIONS:
+        flash("Email, valid role, and a password of at least 8 characters are required.", "error")
+        return redirect(url_for("users"))
+
+    if User.query.filter(
+        or_(
+            db.func.lower(User.email) == email,
+        )
+    ).first():
+        flash("That username or email is already in use.", "error")
+        return redirect(url_for("users"))
+
+    try:
+        db.session.add(User(
+            username=generate_login_username(email),
+            email=email,
+            password_hash=generate_password_hash(password),
+            role=role,
+            is_active=True,
+        ))
+        db.session.commit()
+        flash(f"Login account created for {person.first_name} {person.last_name}.", "success")
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Failed to provision %s login", entity_type)
+        flash("Unable to create the login account.", "error")
+
+    return redirect(url_for("users"))
 
 @app.route("/payments")
 def payments():
+    search = request.args.get("q", "").strip()
+    query = Payment.query.join(Payment.bill).join(Bill.patient)
+    if search:
+        query = query.filter(
+            or_(
+                Bill.invoice_number.ilike(f"%{search}%"),
+                Patient.first_name.ilike(f"%{search}%"),
+                Patient.last_name.ilike(f"%{search}%"),
+                Payment.transaction_reference.ilike(f"%{search}%"),
+            )
+        )
+
     page = request.args.get("page", 1, type=int)
-    pagination = (
-        Payment.query
-        .order_by(Payment.paid_at.desc(), Payment.id.desc())
-        .paginate(page=page, per_page=20, error_out=False)
-    )
+    pagination = query.order_by(
+        Payment.paid_at.desc(), Payment.id.desc()
+    ).paginate(page=page, per_page=20, error_out=False)
+    total_received = db.session.query(
+        db.func.coalesce(db.func.sum(Payment.amount), 0)
+    ).scalar()
 
     return render_template(
         "payments.html",
         payments=pagination.items,
         pagination=pagination,
+        search=search,
+        total_received=Decimal(str(total_received or 0)),
     )
 
 

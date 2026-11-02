@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hospital HMS Login</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/variables.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/base.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+</head>
+<body class="login-page">
+    <main class="login-shell">
+        <section class="login-welcome">
+            <div class="login-logo" aria-hidden="true">H</div>
+            <p class="login-eyebrow">Hospital Management System</p>
+            <h1>Care starts with a connected team.</h1>
+            <p class="login-welcome-copy">
+                Securely access patient care, appointments, medical records, billing,
+                and hospital operations from one place.
+            </p>
+            <div class="login-feature-list">
+                <div class="login-feature">
+                    <span class="login-feature-icon" aria-hidden="true">+</span>
+                    <span>Coordinated patient care</span>
+                </div>
+                <div class="login-feature">
+                    <span class="login-feature-icon" aria-hidden="true">✓</span>
+                    <span>Role-based access</span>
+                </div>
+                <div class="login-feature">
+                    <span class="login-feature-icon" aria-hidden="true">⌁</span>
+                    <span>One trusted workspace</span>
+                </div>
+            </div>
+        </section>
+
+        <section class="login-panel" aria-labelledby="login-title">
+            <div class="login-panel-header">
+                <p class="login-panel-eyebrow">Welcome back</p>
+                <h2 id="login-title">Sign in to your account</h2>
+                <p>Use your hospital email address to continue.</p>
+            </div>
+
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% for category, message in messages %}
+                    <div class="login-alert login-alert-{{ category }}" role="alert">{{ message }}</div>
+                {% endfor %}
+            {% endwith %}
+
+            <form method="POST" action="{{ url_for('login') }}" class="login-form">
+                <div class="login-field">
+                    <label for="email">Hospital email</label>
+                    <input type="email" id="email" name="email"
+                           autocomplete="email" placeholder="name@hospital.org" required>
+                </div>
+                <div class="login-field">
+                    <div class="login-label-row">
+                        <label for="password">Password</label>
+                        <span>Authorized users only</span>
+                    </div>
+                    <input type="password" id="password" name="password"
+                           autocomplete="current-password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="login-button">
+                    Sign in
+                    <span aria-hidden="true">→</span>
+                </button>
+            </form>
+
+            <p class="login-security-note">
+                Your access is protected by your hospital administrator.
+            </p>
+        </section>
+    </main>
+</body>
+</html>

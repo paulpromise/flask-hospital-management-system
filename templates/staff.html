@@ -8,9 +8,16 @@
         <p>Manage hospital staff members and their departments.</p>
     </div>
 
+    {% if can_user_access('staff:edit') %}
     <a href="{{ url_for('add_staff') }}" class="button button-primary">
         + Add Staff
     </a>
+    {% endif %}
+    {% if can_user_access('system:manage') %}
+    <a href="{{ url_for('users') }}" class="button button-secondary">
+        Manage User Accounts
+    </a>
+    {% endif %}
 </div>
 
 
@@ -44,12 +51,14 @@
                 <th>Phone</th>
                 <th>Email</th>
                 <th>Department</th>
-                <th>Status</th>
+                <th>Login</th>
+                <th>Actions</th>
             </tr>
         </thead>
 
         <tbody>
             {% for member in staff_members %}
+            {% set linked_user = user_lookup.get(member.id) %}
             <tr>
                 <td>{{ member.staff_code }}</td>
                 <td>{{ member.first_name }} {{ member.last_name }}</td>
@@ -60,16 +69,34 @@
                     {{ member.department.name if member.department else '-' }}
                 </td>
                 <td>
-                    {% if member.is_active %}
-                        <span class="status-label status-active">Active</span>
+                    {% if linked_user %}
+                        {% if linked_user.is_active %}
+                            <span class="status-label status-active">Active</span>
+                        {% else %}
+                            <span class="status-label status-inactive">Disabled</span>
+                        {% endif %}
                     {% else %}
-                        <span class="status-label status-inactive">Inactive</span>
+                        <span class="status-label status-inactive">No Login</span>
                     {% endif %}
+                </td>
+                <td>
+                    <div class="actions-inline">
+                        {% if can_user_access('staff:edit') %}
+                        <a href="{{ url_for('edit_staff', staff_id=member.id) }}" class="button button-secondary">Edit</a>
+                        {% if linked_user %}
+                        <form method="POST" action="{{ url_for('toggle_user_status', user_id=linked_user.id) }}" style="display:inline;">
+                            <button type="submit" class="button {% if linked_user.is_active %}button-secondary{% else %}button-primary{% endif %}">
+                                {% if linked_user.is_active %}Disable Login{% else %}Enable Login{% endif %}
+                            </button>
+                        </form>
+                        {% endif %}
+                        {% endif %}
+                    </div>
                 </td>
             </tr>
             {% else %}
             <tr>
-                <td colspan="7" class="empty-state">
+                <td colspan="8" class="empty-state">
                     No staff members have been registered yet.
                 </td>
             </tr>
