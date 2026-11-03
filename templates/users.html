@@ -26,19 +26,19 @@
                 </div>
             </div>
             <nav class="directory-nav" aria-label="Directory views">
-                <button type="button" class="directory-nav-item {% if directory_view == 'all' %}is-selected{% endif %}" data-directory-view="all">
+                <a href="{{ url_for('users', view='all') }}" class="directory-nav-item {% if directory_view == 'all' %}is-selected{% endif %}" data-directory-view="all">
                     <span>All accounts</span><strong>{{ users|length }}</strong>
-                </button>
-                <button type="button" class="directory-nav-item {% if directory_view == 'active' %}is-selected{% endif %}" data-directory-view="active">
+                </a>
+                <a href="{{ url_for('users', view='active') }}" class="directory-nav-item {% if directory_view == 'active' %}is-selected{% endif %}" data-directory-view="active">
                     <span>Active accounts</span><strong>{{ users|selectattr('is_active')|list|length }}</strong>
-                </button>
-                <button type="button" class="directory-nav-item {% if directory_view == 'disabled' %}is-selected{% endif %}" data-directory-view="disabled">
+                </a>
+                <a href="{{ url_for('users', view='disabled') }}" class="directory-nav-item {% if directory_view == 'disabled' %}is-selected{% endif %}" data-directory-view="disabled">
                     <span>Disabled accounts</span><strong>{{ users|rejectattr('is_active')|list|length }}</strong>
-                </button>
+                </a>
                 {% if available_doctors or available_staff %}
-                <button type="button" class="directory-nav-item {% if directory_view == 'pending' %}is-selected{% endif %}" data-directory-view="pending">
+                <a href="{{ url_for('users', view='pending') }}" class="directory-nav-item {% if directory_view == 'pending' %}is-selected{% endif %}" data-directory-view="pending">
                     <span>Pending access</span><strong>{{ available_doctors|length + available_staff|length }}</strong>
-                </button>
+                </a>
                 {% endif %}
             </nav>
             <div class="directory-sidebar-footer">
@@ -48,6 +48,15 @@
         </aside>
 
         <main class="directory-main">
+            <div class="directory-toolbar">
+                <label class="directory-search">
+                    <span aria-hidden="true">⌕</span>
+                    <span class="sr-only">Search users</span>
+                    <input type="search" data-directory-search value="{{ search_term }}" placeholder="Search by ID, name, or email">
+                </label>
+                <button type="button" class="button button-primary button-small" data-directory-search-button>Search</button>
+                <button type="button" class="button button-secondary button-small" data-directory-clear>Clear</button>
+            </div>
             <section class="directory-panel" data-directory-panel="accounts" {% if directory_view == 'pending' %}hidden{% endif %}>
                 <div class="directory-panel-header">
                     <div>
@@ -57,11 +66,6 @@
                     <span class="directory-result-count" data-user-count>{{ users|length }} accounts</span>
                 </div>
                 <div class="directory-toolbar">
-                    <label class="directory-search">
-                        <span aria-hidden="true">⌕</span>
-                        <span class="sr-only">Search accounts</span>
-                        <input type="search" data-user-search placeholder="Search accounts">
-                    </label>
                     <label>
                         <span class="sr-only">Filter by role</span>
                         <select data-user-role>
@@ -71,7 +75,6 @@
                             {% endfor %}
                         </select>
                     </label>
-                    <button type="button" class="button button-secondary button-small" data-clear-user-filters>Clear</button>
                 </div>
                 <div class="directory-table-wrap">
                     <table class="data-table directory-table">
@@ -89,7 +92,7 @@
                             {% for user in users %}
                             <tr data-user-row
                                 data-user-id="{{ user.id }}"
-                                data-user-search-value="{{ user.username }} {{ user.email }}"
+                                data-user-search-value="{{ user.id }} {{ user.username }} {{ user.email }} {{ personnel_search_values.get(user.email.lower(), '') }}"
                                 data-user-role-value="{{ user.role }}"
                                 data-user-status-value="{{ 'active' if user.is_active else 'disabled' }}"
                                 data-user-name="{{ user.username }}"
@@ -97,12 +100,7 @@
                                 data-user-created="{{ user.created_at.strftime('%d %b %Y') if user.created_at else 'Unknown' }}"
                                 data-user-role-label="{{ user.role|title }}"
                                 data-user-status-label="{{ 'Active' if user.is_active else 'Disabled' }}">
-                                <td>
-                                    <div class="directory-identity">
-                                        <span class="user-avatar">{{ user.username[:1]|upper }}</span>
-                                        <strong>{{ user.username }}</strong>
-                                    </div>
-                                </td>
+                                <td>{{ user.username }}</td>
                                 <td>{{ user.email }}</td>
                                 <td><span class="role-badge">{{ user.role|title }}</span></td>
                                 <td>
@@ -144,12 +142,13 @@
                         <tbody>
                             {% for pending in pending_people %}
                             {% set person = pending.person %}
-                            <tr>
+                            <tr data-pending-row
+                                data-pending-search-value="{{ person.id }} {{ person.doctor_code if pending.entity_type == 'doctor' else person.staff_code }} {{ person.first_name }} {{ person.last_name }} {{ person.email }}">
                                 <td><strong>{{ 'Dr. ' if pending.entity_type == 'doctor' else '' }}{{ person.first_name }} {{ person.last_name }}</strong></td>
                                 <td>{{ 'Doctor' if pending.entity_type == 'doctor' else person.job_title or 'Staff' }}</td>
                                 <td>{{ person.email }}</td>
                                 <td class="directory-action-cell">
-                                    <a href="{{ url_for('provision_user', entity_type=pending.entity_type, entity_id=person.id) }}" class="button button-secondary button-small">Edit access</a>
+                                    <a href="{{ url_for('provision_user', entity_type=pending.entity_type, entity_id=person.id) }}" class="button button-secondary button-small">Enable login</a>
                                 </td>
                             </tr>
                             {% endfor %}

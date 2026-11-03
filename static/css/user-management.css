@@ -173,17 +173,6 @@
     font-size: 12px;
 }
 
-.user-avatar {
-    display: grid;
-    width: 34px;
-    height: 34px;
-    place-items: center;
-    border-radius: 50%;
-    background: var(--surface-hover);
-    color: var(--wine-plum);
-    font-weight: bold;
-}
-
 .role-badge {
     display: inline-flex;
     padding: 5px 9px;
@@ -700,6 +689,7 @@
         font: inherit;
         font-size: 12px;
         text-align: left;
+        text-decoration: none;
         cursor: pointer;
     }
 

@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
-{% block title %}Create Login for {{ person.first_name }} {{ person.last_name }} | Hospital HMS{% endblock %}
-{% block page_heading %}Create Login Account{% endblock %}
+{% block title %}Enable Login for {{ person.first_name }} {{ person.last_name }} | Hospital HMS{% endblock %}
+{% block page_heading %}Enable Login Access{% endblock %}
 
 {% block content %}
 <div class="user-edit-page">
@@ -12,7 +12,7 @@
                 <span class="user-edit-avatar">{{ person.first_name[:1]|upper }}{{ person.last_name[:1]|upper }}</span>
                 <div>
                     <h2>{{ 'Dr. ' if entity_type == 'doctor' else '' }}{{ person.first_name }} {{ person.last_name }}</h2>
-                    <p>Create login credentials for this existing {{ 'doctor' if entity_type == 'doctor' else 'staff member' }}.</p>
+                    <p>Enable login access and create a password for this existing {{ 'doctor' if entity_type == 'doctor' else 'staff member' }}.</p>
                 </div>
             </div>
         </div>
@@ -24,8 +24,8 @@
             <section class="user-edit-section">
                 <div class="user-edit-section-heading">
                     <div>
-                        <h3>Login account details</h3>
-                        <p>Choose the credentials this person will use to access the hospital system.</p>
+                        <h3>Enable login and create password</h3>
+                        <p>Set the credentials this person will use to access the hospital system.</p>
                     </div>
                 </div>
                 <form method="POST" action="{{ url_for('provision_user', entity_type=entity_type, entity_id=person.id) }}" class="user-edit-form">
@@ -49,7 +49,7 @@
                     </div>
                     <div class="user-edit-form-actions">
                         <a href="{{ url_for('users') }}" class="button button-secondary">Cancel</a>
-                        <button type="submit" class="button button-primary">Create login account</button>
+                        <button type="submit" class="button button-primary">Enable login &amp; create password</button>
                     </div>
                 </form>
             </section>
@@ -62,6 +62,7 @@
                         <p>Account information will be linked to this existing record.</p>
                     </div>
                 </div>
+                <p class="user-help-text">New login accounts are enabled immediately. You can disable or re-enable login access from the account details page after creation.</p>
                 <dl class="pending-person-details">
                     <div><dt>Name</dt><dd>{{ person.first_name }} {{ person.last_name }}</dd></div>
                     <div><dt>Email</dt><dd>{{ person.email }}</dd></div>

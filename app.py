@@ -2387,9 +2387,14 @@ def toggle_user_status(user_id):
         return redirect(url_for("users"))
 
     user.is_active = not user.is_active
-    db.session.commit()
-    status = "activated" if user.is_active else "deactivated"
-    flash(f"User account {status} successfully.", "success")
+    try:
+        db.session.commit()
+        status = "activated" if user.is_active else "deactivated"
+        flash(f"User account {status} successfully.", "success")
+    except Exception:
+        db.session.rollback()
+        app.logger.exception("Failed to change status for user %s", user_id)
+        flash("Unable to change the user account status.", "error")
     return redirect(url_for("users"))
 
 
@@ -2398,6 +2403,7 @@ def toggle_user_status(user_id):
 @permission_required("system:manage")
 def users():
     directory_view = request.args.get("view", "all")
+    search_term = request.args.get("q", "").strip().lower()
     if directory_view not in {"all", "active", "disabled", "pending"}:
         directory_view = "all"
     linked_emails = {
@@ -2405,6 +2411,21 @@ def users():
         for user in User.query.with_entities(User.email).all()
         if user.email
     }
+    personnel_search_values = {}
+    for doctor in Doctor.query.with_entities(
+        Doctor.email, Doctor.doctor_code, Doctor.first_name, Doctor.last_name
+    ).all():
+        if doctor.email:
+            personnel_search_values[doctor.email.lower()] = (
+                f"{doctor.doctor_code} {doctor.first_name} {doctor.last_name}"
+            )
+    for member in Staff.query.with_entities(
+        Staff.email, Staff.staff_code, Staff.first_name, Staff.last_name
+    ).all():
+        if member.email:
+            personnel_search_values[member.email.lower()] = (
+                f"{member.staff_code} {member.first_name} {member.last_name}"
+            )
     available_doctors = [
         doctor for doctor in Doctor.query.order_by(Doctor.last_name, Doctor.first_name).all()
         if doctor.email and doctor.email.lower() not in linked_emails
@@ -2420,6 +2441,21 @@ def users():
         {"person": member, "entity_type": "staff"}
         for member in available_staff
     ]
+    if search_term:
+        pending_people = [
+            item for item in pending_people
+            if search_term in " ".join(
+                str(value) for value in (
+                    item["person"].id,
+                    getattr(item["person"], "doctor_code", None),
+                    getattr(item["person"], "staff_code", None),
+                    item["person"].first_name,
+                    item["person"].last_name,
+                    item["person"].email,
+                )
+                if value
+            ).lower()
+        ]
     pending_people.sort(
         key=lambda item: (
             item["person"].last_name.lower(),
@@ -2446,6 +2482,8 @@ def users():
         pending_pages=pending_pages,
         pending_total=pending_total,
         directory_view=directory_view,
+        search_term=search_term,
+        personnel_search_values=personnel_search_values,
     )
 
 
@@ -2612,15 +2650,17 @@ def provision_user(entity_type, entity_id):
         return redirect(url_for("users"))
 
     try:
-        db.session.add(User(
+        user = User(
             username=generate_login_username(email),
             email=email,
             password_hash=generate_password_hash(password),
             role=role,
             is_active=True,
-        ))
+        )
+        db.session.add(user)
         db.session.commit()
         flash(f"Login account created for {person.first_name} {person.last_name}.", "success")
+        return redirect(url_for("edit_user", user_id=user.id))
     except Exception:
         db.session.rollback()
         app.logger.exception("Failed to provision %s login", entity_type)
